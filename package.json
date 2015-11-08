@@ -1,0 +1,38 @@
+{
+  "name": "rest-fetch",
+  "description": "a library to fetch graph of rest resources",
+  "license": "(MIT OR Apache-2.0)",
+  "version": "0.1.0",
+  "main": "index.js",
+  "files":[ 
+    "*.js", 
+    "*.ts", 
+    "*.js.map",
+    "lib/**/*.js", 
+    "lib/**/*.ts", 
+    "lib/**/*.js.map",
+    "test/**/*.js", 
+    "test/**/*.ts", 
+    "test/**/*.js.map",
+    "src/**/*.ts" 
+  ],
+  "devDependencies": {
+    "typescript": "1.6.2",
+    "source-map-loader": "^0.1.5",
+    "ts-loader": "^0.5.6"
+  },
+  "dependencies": {
+    "es6-promise": "^3.0.2",
+    "flib": "0.1.1",
+    "reflect-metadata": "0.1.2",
+    "whatwg-fetch": "0.10.0"
+  },
+  "scripts":{
+    "prepublish" : "tsc -p src --outDir .",
+    "mkTest" : "webpack --config ./scripts/test-webpack.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gdefacci/rest-fetch.git"
+  }
+}

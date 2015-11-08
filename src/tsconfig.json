@@ -1,0 +1,43 @@
+{
+	"compilerOptions": {
+                "module": "commonjs",
+                "target": "es5",
+                "moduleResolution": "node",
+                "declaration": true,
+                "sourceMap": true,
+                "emitDecoratorMetadata": true,
+                "experimentalDecorators":true
+	},
+	"files": [
+                "libs/es6-promise/es6-promise.d.ts",
+                "libs/reflect-metadata/reflect-metadata.d.ts",
+                "libs/whatwg-fetch/whatwg-fetch.d.ts",
+
+                "../node_modules/flib/index.d.ts",
+
+                "lib/Util.ts",
+                "lib/Meta.ts",
+                "lib/cache.ts",
+                "lib/RequestFactory.ts",
+                "lib/ResponseReader.ts",
+
+                "lib/SimpleConverter.ts",
+                "lib/ChooseConverter.ts",
+                "lib/types.ts",
+                "lib/TypeExpr.ts",
+                "lib/ObjectsCache.ts",
+
+                "lib/Retriever.ts",
+                "lib/Converter.ts",
+
+                "lib/InternalConversion.ts",
+
+                "lib/Link.ts",
+                "lib/Fetch.ts",
+
+                "index.ts",
+
+                "test/test1.ts",
+                "test/test2.ts"
+	]
+}
