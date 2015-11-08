@@ -1,4 +1,4 @@
-A annotations based typescript library, to fetch objects graph, exposed as rest/HATEOAS resources. 
+A annotations based typescript library, to fetch graph of objects, exposed as rest/HATEOAS resources. 
 
 tutorial
 ========
@@ -13,9 +13,9 @@ GET /persons/pippo
 {
   "name" : "pippo",
   "friends" : [
-    "http://localhost:8080/persons/minni"
+    "/persons/minni"
   ],
-  "address" : "http://localhost:8080/persons/pippo/address"
+  "address" : "/persons/pippo/address"
 }
 ```
 
@@ -36,7 +36,7 @@ GET /persons/pippo/address
 ```json
 {
   "street" : "dei pomi",
-  "city" : "http://localhost:8080/cities/RE"
+  "city" : "/cities/RE"
 }
 ```
 
@@ -85,7 +85,7 @@ We can achieve the result defining few classes:
 And then:
 
 ```
-const result:Promise<Person> = fetch(PersonImpl).from("http://localhost:8080/persons/pippo")  
+const result:Promise<Person> = fetch(PersonImpl).from("/persons/pippo")  
 ```
 
 See [tests](src/test) for more examples
