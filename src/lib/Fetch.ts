@@ -2,7 +2,7 @@ import {JsMap, Option, isNull, lazy} from "flib"
 import {ResponseReader, jsonResponseReader} from "./ResponseReader"
 import {RequestFactory, createRequestFactory} from "./RequestFactory"
 import {HttpCache, ByUrlCache} from "./cache"
-import {ObjectFetcher, ConstructorType, isOptionType} from "./Meta"
+import {ObjectFetcher, ConstructorType, isOptionType, getLinksMeta} from "./Meta"
 import {Link} from "./Link"
 import {Converter} from "./Converter"
 import {ResourceRetriever, ArrayResourceRetriever} from "./Retriever"
@@ -125,7 +125,7 @@ function fetchProperties<T>(context: Context, typ: ConstructorType<T>, wsobj: an
 
   log( () =>`fetching properties of ${typ.name} from ${JSON.stringify(wsobj, undefined, "")}`)
 
-  const links: JsMap<(Link | Converter)[]> = typ.linksMeta || {};
+  const links: JsMap<(Link | Converter)[]> =  getLinksMeta(typ).getOrElse( () => { return {} }) // || {};
   const r = new typ()
   const mergedKeys = Object.keys(JsMap.merge<any>([wsobj, links]))
   const promises: Promise<any>[] = mergedKeys.map(k => {
@@ -313,7 +313,8 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
 }
 
 function fetchInternal<T>(context: Context, typ: ConstructorType<T>): CallbackFetcher<T> {
-  const linksMeta = typ && typ.linksMeta;
+  //const linksMeta = typ && typ.linksMeta;
+  const linksMeta = typ && getLinksMeta(typ).getOrElse(() => undefined);
   const typExpr = TypeExpr.fromJsType(typ)
   return {
     fetch: (req: Request, callback: (v: T) => void):Promise<any> => {

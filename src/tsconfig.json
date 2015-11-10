@@ -15,6 +15,7 @@
 
                 "../node_modules/flib/index.d.ts",
 
+                "lib/EntriesMap.ts",
                 "lib/Util.ts",
                 "lib/Meta.ts",
                 "lib/cache.ts",
