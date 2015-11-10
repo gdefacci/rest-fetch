@@ -1,5 +1,5 @@
 import {ChooseConverterJsType} from "./types"
-import {lazy, Option, JsMap, isNull} from "flib"
+import {lazy, Arrays, Option, JsMap, isNull} from "flib"
 
 export class ChooseConverter implements ChooseConverter {
   constructor(public convert:(a:any) => Option<ChooseConverterJsType<any>>, public description?:string) {
@@ -23,6 +23,12 @@ export module ChooseConverter {
 
   export function value(ct:ChooseConverterJsType<any>):ChooseConverter {
     return create(a => Option.some(ct))
+  }
+
+  export function byPropertyExists(entries:JsMap.Entry<ChooseConverterJsType<any>>[], description?:string) {
+    return new ChooseConverter(
+      ws => Arrays.find(entries, e => !isNull(ws[e.key])).map(e => e.value),
+      description)
   }
 
 }
