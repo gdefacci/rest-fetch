@@ -16,18 +16,6 @@ export interface ObjectFetcher {
   <T>(typ: JsConstructor<T>, wso:any):Promise<T>
 }
 
-function eq(a,b){
-  return a === b;
-}
-
-export function isOptionType(a:JsConstructor<any>):boolean {
-  return eq(a, Option)
-}
-
-export function isArrayType(a:JsConstructor<any>):boolean {
-  return eq(a, Array)
-}
-
 export class MetaLinksMap {
   linksMeta:EntriesMap<JsConstructor<any>, ObjectMapping>
   constructor() {

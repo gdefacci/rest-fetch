@@ -39,7 +39,7 @@
                 "index.ts",
 
                 "test/TestUtil.ts",
-                "test/JsTypeTest.ts",
+                "test/MappingTypeTest.ts",
                 "test/test1.ts",
                 "test/test2.ts",
                 "test/EntriesMapTest.ts",

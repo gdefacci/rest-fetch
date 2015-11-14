@@ -2,11 +2,11 @@ import {JsMap, Option, isNull, lazy} from "flib"
 import {ResponseReader, jsonResponseReader} from "./ResponseReader"
 import {RequestFactory, createRequestFactory} from "./RequestFactory"
 import {HttpCache, ByUrlCache} from "./cache"
-import {ObjectFetcher, isOptionType, getLinksMeta} from "./Meta"
+import {ObjectFetcher, getLinksMeta} from "./Meta"
 import {Link} from "./Link"
 import {Converter} from "./Converter"
 import {ResourceRetriever, ArrayResourceRetriever} from "./Retriever"
-import {JsConstructor, MappingType} from "./types"
+import {JsConstructor, MappingType, isOptionType} from "./types"
 import {trap} from "./Util"
 import {InternalConversionTo, jsTypeToInternalConversion} from "./InternalConversion"
 import {Selector} from "./Selector"
@@ -28,20 +28,20 @@ interface Context {
   promisesToWait: Promise<any>[]
 }
 
-function createJsTypeRetriever(typ:MappingType, opts?:FetchOpts):JsTypeRetriever {
-  return new JsTypeRetriever(typ, createContext(opts))
+function createMappingTypeRetriever(typ:MappingType, opts?:FetchOpts):MappingTypeRetriever {
+  return new MappingTypeRetriever(typ, createContext(opts))
 }
 
 export function fetch<T>(typ:JsConstructor<T>, opts?:FetchOpts):ResourceRetriever<T> {
-  return createJsTypeRetriever(typ, opts)
+  return createMappingTypeRetriever(typ, opts)
 }
 
 export function fetchArray<T>(typ:JsConstructor<T>, opts?:FetchOpts):ArrayResourceRetriever<T[]> {
-  return createJsTypeRetriever({ arrayOf:typ }, opts)
+  return createMappingTypeRetriever({ arrayOf:typ }, opts)
 }
 
 export function fetchChoose(ch:Selector, opts?:FetchOpts):ResourceRetriever<any> {
-  return createJsTypeRetriever(ch, opts)
+  return createMappingTypeRetriever(ch, opts)
 }
 
 function createContext(opts?: FetchOpts):Context {
@@ -60,16 +60,16 @@ function objectFetcherImpl<T>(context:Context) {
   }
 }
 
-class JsTypeRetriever implements ResourceRetriever<any> {
+class MappingTypeRetriever implements ResourceRetriever<any> {
   objectFetcher:() => ObjectFetcher
   cnv:() => InternalConversionTo<any>
-  isArrayJsType:() => boolean
+  isArrayMappingType:() => boolean
   private typeExpr:() => TypeExpr
   constructor(private typ:MappingType, private context:Context) {
     this.objectFetcher = lazy(() => objectFetcherImpl(this.context))
-    this.typeExpr = lazy(() => TypeExpr.fromJsType(this.typ))
+    this.typeExpr = lazy(() => TypeExpr.fromMappingType(this.typ))
     this.cnv = lazy(() => jsTypeToInternalConversion(this.typ))
-    this.isArrayJsType = lazy(() => this.typeExpr().kind === TypeExprKind.array)
+    this.isArrayMappingType = lazy(() => this.typeExpr().kind === TypeExprKind.array)
   }
   private waitPendingPromisesAndReturn(v:any):Promise<any> {
     return Promise.all(this.context.promisesToWait).then(u => Promise.resolve(v))
@@ -78,27 +78,27 @@ class JsTypeRetriever implements ResourceRetriever<any> {
     return this.cnv()(wso, this.objectFetcher(), undefined).then(v => this.waitPendingPromisesAndReturn(v))
   }
   fromArray(wsos:any[]): Promise<any[]> {
-    if (this.isArrayJsType()) {
+    if (this.isArrayMappingType()) {
       return this.cnv()(wsos, this.objectFetcher(), undefined).then(v => this.waitPendingPromisesAndReturn(v))
     } else {
-      return new JsTypeRetriever({arrayOf:this.typ}, this.context).fromArray(wsos)
+      return new MappingTypeRetriever({arrayOf:this.typ}, this.context).fromArray(wsos)
     }
   }
   from(url:string, req?: RequestInit):Promise<any> {
-    if (this.isArrayJsType()) {
+    if (this.isArrayMappingType()) {
       return Promise.reject(`trying to get an ArrayMappingType from ${url}`)
     } else {
       const rq = req !== undefined ? new Request(url, req) : this.context.requestFactory(url);
       let res:any = undefined
-      return fetchLinkJsType(url, this.context,  this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
+      return fetchLinkMappingType(url, this.context,  this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
     }
   }
   fromUrls(urls:string[]):Promise<any> {
-    if (this.isArrayJsType()) {
+    if (this.isArrayMappingType()) {
       let res = undefined
-      return fetchLinkJsType(urls, this.context, this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
+      return fetchLinkMappingType(urls, this.context, this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
     } else {
-      return new JsTypeRetriever({arrayOf:this.typ}, this.context).fromUrls(urls)
+      return new MappingTypeRetriever({arrayOf:this.typ}, this.context).fromUrls(urls)
     }
   }
 }
@@ -181,7 +181,7 @@ function fetchUrl(url:string, context:Context):Promise<any> {
   return httpFetch(context.requestFactory(url), context.httpCache, context.responseReader)
 }
 
-function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
+function fetchLinkMappingType(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
   const expectingArrayUrl = lazy(() => Promise.reject(`expecting an array but got ${url}`))
   const expectingObjectUrl = lazy(() => Promise.reject(`expecting an string but got ${url}`))
 
@@ -196,7 +196,7 @@ function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeE
           return r;
         }))
 
-        return withObjectCache(url, TypeExpr.fromJsType(cnv), () => prom, context, callback )
+        return withObjectCache(url, TypeExpr.fromMappingType(cnv), () => prom, context, callback )
 
       } else {
         return expectingObjectUrl()
@@ -208,7 +208,7 @@ function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeE
       } else {
         const res:any[] = []
         const proms = url.map( (u, idx) => {
-          const p1 = fetchLinkJsType(u, context, arr.value, a => { res[idx] = a }, propUrl)
+          const p1 = fetchLinkMappingType(u, context, arr.value, a => { res[idx] = a }, propUrl)
           return p1.then( i => Promise.resolve(i), err => Promise.reject(`error at index ${idx}, error:${err.message}`) )
         })
         return Promise.all( proms ).then( u => callback(res) )
@@ -219,7 +219,7 @@ function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeE
         callback(Option.none())
         return Promise.resolve<void>()
       } else {
-        return fetchLinkJsType(url, context, opt.value, a => callback(Option.some(a)), propUrl)
+        return fetchLinkMappingType(url, context, opt.value, a => callback(Option.some(a)), propUrl)
       }
     },
     (choose) => {
@@ -227,7 +227,7 @@ function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeE
         return fetchUrl(url, context).then( wso => {
           return choose(wso).fold(
             () => Promise.reject("no choice"),
-            (typ) => fetchLinkJsType(url, context, typ, callback, propUrl)
+            (typ) => fetchLinkMappingType(url, context, typ, callback, propUrl)
           )
         })
       } else
@@ -246,7 +246,7 @@ function fetchProperty(context: Context, typeName:string, propertyName:string, p
   if (l instanceof Link) {
 
     if ((typeof propValue === "string") || Array.isArray(propValue)) {
-      res = fetchLinkJsType(propValue, context, l.resultType, callback, parentUrl).then( i => Promise.resolve(i), err => {
+      res = fetchLinkMappingType(propValue, context, l.resultType, callback, parentUrl).then( i => Promise.resolve(i), err => {
       const msg = `error fetching property  ${propertyName} of ${typeName} as link: ${err}`
       return Promise.reject(msg)
     })
@@ -314,7 +314,7 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
 
 function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetcher<T> {
   const linksMeta = typ && getLinksMeta(typ) //.getOrElse(() => undefined);
-  const typExpr = TypeExpr.fromJsType(typ)
+  const typExpr = TypeExpr.fromMappingType(typ)
   return {
     fetch: (req: Request, callback: (v: T) => void):Promise<any> => {
 

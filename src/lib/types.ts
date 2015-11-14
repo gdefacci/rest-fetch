@@ -23,20 +23,16 @@ export class GetPropertyUrl<B> {
   }
 }
 
-export type SelectorJsType = JsConstructor<any> | ArrayMappingType | OptionMappingType | SimpleConverter<any, any> | GetPropertyUrl<any>
-export type MappingType = SelectorJsType | Selector
+export type SelectorMappingType = JsConstructor<any> | ArrayMappingType | OptionMappingType | SimpleConverter<any, any> | GetPropertyUrl<any>
+export type MappingType = SelectorMappingType | Selector
 
 export module MappingType {
-  function isPrimitiveType(a:any):boolean {
-    return a === String || a === Number || a === Boolean
-  }
-
-  export function isJsType(t:any):boolean {
+  export function isMappingType(t:any):boolean {
     const notIsPrim = !isPrimitiveType(t)
     return !isNull(t) && notIsPrim && (
       (typeof t === "function") ||
       (t instanceof SimpleConverter) || (t instanceof Selector) || (t instanceof GetPropertyUrl) ||
-      isArrayJsType(t) || isOptionJsType(t)
+      isArrayMappingType(t) || isOptionMappingType(t)
     )
   }
 
@@ -48,22 +44,22 @@ export module MappingType {
     }
   }
 
-  function hasJsTypeProperty(a:any, property:string, desc:string) {
+  function hasMappingTypeProperty(a:any, property:string, desc:string) {
     if (!isNull(a) && a.hasOwnProperty(property)) {
       const itmType = a[property]
-      const itmIsJsTyp = isJsType(itmType)
+      const itmIsJsTyp = isMappingType(itmType)
       //if (!itmIsJsTyp) throw new Error(`${desc} is invalid :${itmType}`)
       return itmIsJsTyp;
     } else
       return false
   }
 
-  export function isArrayJsType(a:any) {
-    return hasJsTypeProperty(a, "arrayOf", "arrayOf parameter")
+  export function isArrayMappingType(a:any) {
+    return hasMappingTypeProperty(a, "arrayOf", "arrayOf parameter")
   }
 
-  export function isOptionJsType(a:any) {
-    return hasJsTypeProperty(a, "optionOf", "optionOf parameter")
+  export function isOptionMappingType(a:any) {
+    return hasMappingTypeProperty(a, "optionOf", "optionOf parameter")
   }
 
   export function fold<R>(typ: (t: JsConstructor<any>) => R,
@@ -81,8 +77,8 @@ export module MappingType {
       else if (typeof t === "function") {
         if (!isPrimitiveType(t)) return typ(<any>t)
         else throw new Error(`invalid constructor type ${t}`)
-      } else if (isArrayJsType(t)) return array(<any>t)
-      else if (isOptionJsType(t)) return option(<any>t)
+      } else if (isArrayMappingType(t)) return array(<any>t)
+      else if (isOptionMappingType(t)) return option(<any>t)
       else throw new Error(`unrecognized MappingType ${JSON.stringify(t)}`)
     }
   }
@@ -98,3 +94,18 @@ export module MappingType {
 }
 
 
+export function isPrimitiveType(a:any):boolean {
+    return a === String || a === Number || a === Boolean
+  }
+
+function eq(a,b){
+  return a === b;
+}
+
+export function isOptionType(a:JsConstructor<any>):boolean {
+  return eq(a, Option)
+}
+
+export function isArrayType(a:JsConstructor<any>):boolean {
+  return eq(a, Array)
+}

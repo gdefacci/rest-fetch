@@ -35,7 +35,7 @@ export class TypeExpr {
           default: throw new Error("invalid folding "+hd)
         }
       } else {
-        return TypeExpr.fromJsType(this.leaf)
+        return TypeExpr.fromMappingType(this.leaf)
       }
     }
   }
@@ -93,15 +93,15 @@ export module TypeExpr {
     return new TypeExpr(TypeExprKind.constructorFunction, "", ct)
   }
 
-  export const fromJsType:(a:MappingType) => TypeExpr = MappingType.fold(
+  export const fromMappingType:(a:MappingType) => TypeExpr = MappingType.fold(
     (ct) => new TypeExpr(TypeExprKind.constructorFunction, "", ct),
     (cnv) => new TypeExpr(TypeExprKind.simpleConverter, "", cnv),
     (arr) => {
-      const itmTypeExpr = fromJsType(arr.arrayOf)
+      const itmTypeExpr = fromMappingType(arr.arrayOf)
       return new TypeExpr(TypeExprKind.array, `a${itmTypeExpr.folding}`, itmTypeExpr.leaf)
     },
     (opt) => {
-      const itmTypeExpr = fromJsType(opt.optionOf)
+      const itmTypeExpr = fromMappingType(opt.optionOf)
       return new TypeExpr(TypeExprKind.option, `o${itmTypeExpr.folding}`, itmTypeExpr.leaf)
     },
     (chs) => new TypeExpr(TypeExprKind.choice, "", chs),
@@ -124,7 +124,7 @@ export module TypeExpr {
         case TypeExprKind.choice:
           const chCnv = <Selector>t.value
           const f:(ws:any) => Option<TypeExpr> = (ws) =>
-            chCnv.convert(ws).map( t => fromJsType(t))
+            chCnv.convert(ws).map( t => fromMappingType(t))
           return choose(f)
         case TypeExprKind.getPropertyUrl: return propertyUrl(<any>t.value)
       }
@@ -145,7 +145,7 @@ export module TypeExpr {
         (cnv) => simple(cnv),
         (chs) => {
           const chCnv = t
-          const f:(ws:any) => Option<TypeExpr> = (ws) => chs.convert(ws).map( t => TypeExpr.fromJsType(t))
+          const f:(ws:any) => Option<TypeExpr> = (ws) => chs.convert(ws).map( t => TypeExpr.fromMappingType(t))
           return choose(f)
         },
         (pu) => propertyUrl(pu)

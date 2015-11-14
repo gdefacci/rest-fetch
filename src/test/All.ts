@@ -3,11 +3,11 @@ import * as test2 from "./test2"
 import * as EntriesMapTest from "./EntriesMapTest"
 import {ErrorTest1} from "./error1"
 import {assert, checkFail} from "./TestUtil"
-import * as JsTypeTest from "./JsTypeTest"
+import * as MappingTypeTest from "./MappingTypeTest"
 
 export function allTests():Promise<any> {
   return Promise.all<any>([
-    JsTypeTest.test1(),
+    MappingTypeTest.test1(),
     test1.test1(),
     test2.Test1.test1(),
     test2.Test2.test1(),
@@ -17,6 +17,7 @@ export function allTests():Promise<any> {
     test2.Test5.test2(),
     test2.Test6.test1(),
     test2.Test6.test2(),
+    test2.Test7.test1(),
     EntriesMapTest.test1(),
     ErrorTest1.allErrorTests()
   ])

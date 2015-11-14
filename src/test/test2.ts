@@ -322,3 +322,26 @@ export module Test6 {
     })
   }
 }
+
+export module Test7 {
+
+  class Res1 {
+    @convert()
+    name:string
+  }
+
+  const data = {
+    "/res-a/pippo":{
+      name:1,
+    }
+  }
+
+  export function test1() {
+    const opts = testOpts(data)
+    return fetch(Res1, opts).from("/res-a/pippo").then(resa => {
+      fail("expecting a failure")
+    }, (err:string) => {
+      assert(err.indexOf("1 is not a string") > -1)
+    })
+  }
+}
