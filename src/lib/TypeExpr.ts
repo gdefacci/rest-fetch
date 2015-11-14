@@ -2,7 +2,7 @@ import {JsMap, Option, Arrays} from "flib"
 import {JsType, GetPropertyUrl} from "./types"
 import {ConstructorType} from "./Meta"
 import {SimpleConverter} from "./SimpleConverter"
-import {ChooseConverter} from "./ChooseConverter"
+import {Selector} from "./Selector"
 
 export enum TypeExprKind {
   constructorFunction = 0,
@@ -13,7 +13,7 @@ export enum TypeExprKind {
   getPropertyUrl = 5
 }
 
-export type LeafTypeExpr = ConstructorType<any> | SimpleConverter<any,any> | ChooseConverter | GetPropertyUrl<any>
+export type LeafTypeExpr = ConstructorType<any> | SimpleConverter<any,any> | Selector | GetPropertyUrl<any>
 
 export type ExtTypeExpr = LeafTypeExpr | TypeExpr
 
@@ -54,7 +54,7 @@ export class TypeExpr {
         if (v instanceof TypeExpr) return `Option(${v.description})`;
         else return LeafTypeExpr.description(<any>v)
       },
-      (chs) => "ChooseConverter",
+      (chs) => "Selector",
       (pu) => LeafTypeExpr.description(pu)
     )(this)
   }
@@ -64,12 +64,12 @@ export module LeafTypeExpr {
 
   export function fold<R>(typ: (t: ConstructorType<any>) => R,
     simple: (cnv: SimpleConverter<any, any>) => R,
-    choose: (cnv:ChooseConverter) => R,
+    choose: (cnv:Selector) => R,
     propertyUrl: (t: GetPropertyUrl<any>) => R
   ):(t: LeafTypeExpr) => R {
     return t => {
       if (t instanceof SimpleConverter) return simple(t)
-      else if (t instanceof ChooseConverter) {
+      else if (t instanceof Selector) {
         return choose(t)
       } else if (t instanceof GetPropertyUrl) return propertyUrl(t)
       else if (typeof t === "function") return typ(<any>t)
@@ -81,7 +81,7 @@ export module LeafTypeExpr {
     return fold(
       (ct) => ct.name,
       (cnv) => cnv.description || "<SimpleConverter>",
-      (chs) => chs.description || "<ChooseConverter>",
+      (chs) => chs.description || "<Selector>",
       () => "PropertyUrl"
     )(l)
   }
@@ -123,7 +123,7 @@ export module TypeExpr {
         case TypeExprKind.array: return array(t)
         case TypeExprKind.option: return option(t)
         case TypeExprKind.choice:
-          const chCnv = <ChooseConverter>t.value
+          const chCnv = <Selector>t.value
           const f:(ws:any) => Option<TypeExpr> = (ws) =>
             chCnv.convert(ws).map( t => fromJsType(t))
           return choose(f)

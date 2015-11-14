@@ -9,7 +9,7 @@ import {ResourceRetriever, ArrayResourceRetriever} from "./Retriever"
 import {JsType} from "./types"
 import {trap} from "./Util"
 import {InternalConversionTo, jsTypeToInternalConversion} from "./InternalConversion"
-import {ChooseConverter} from "./ChooseConverter"
+import {Selector} from "./Selector"
 import {ObjectsCache} from "./ObjectsCache"
 import {TypeExpr, ExtTypeExpr, TypeExprKind} from "./TypeExpr"
 
@@ -40,7 +40,7 @@ export function fetchArray<T>(typ:ConstructorType<T>, opts?:FetchOpts):ArrayReso
   return createJsTypeRetriever({ arrayOf:typ }, opts)
 }
 
-export function fetchChoose(ch:ChooseConverter, opts?:FetchOpts):ResourceRetriever<any> {
+export function fetchChoose(ch:Selector, opts?:FetchOpts):ResourceRetriever<any> {
   return createJsTypeRetriever(ch, opts)
 }
 

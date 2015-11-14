@@ -1,5 +1,5 @@
 import {Option, fail, JsMap} from "flib"
-import {link, fetch, convert, Converter, SimpleConverter, ChooseConverter, ConstructorType, ByUrlCache} from "../index"
+import {link, fetch, convert, Converter, SimpleConverter, Selector, ConstructorType, ByUrlCache} from "../index"
 
 function testOpts(data:JsMap<any>) {
   const testHttpCache = new ByUrlCache()
@@ -111,7 +111,7 @@ export module Test3 {
 
   type ResBOption = Option<ResB>
 
-  const resbChoice = ChooseConverter.create( (a:{kind?:string}) => {
+  const resbChoice = Selector.create( (a:{kind?:string}) => {
     switch(a && a.kind) {
       case "1": return Option.some(ResB_1);
       case "2": return Option.some(ResB_2);

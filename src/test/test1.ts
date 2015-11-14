@@ -1,5 +1,5 @@
 import {Option, fail} from "flib"
-import {link, fetch, convert, Converter, SimpleConverter, ChooseConverter, ConstructorType, ByUrlCache} from "../index"
+import {link, fetch, convert, Converter, SimpleConverter, Selector, ConstructorType, ByUrlCache} from "../index"
 import * as test2 from "./test2"
 
 export class City {
@@ -8,7 +8,7 @@ export class City {
   extra1 = "an extra field"
 }
 
-const cityChoice = ChooseConverter.create( (wso:{ kind:string }) => {
+const cityChoice = Selector.create( (wso:{ kind:string }) => {
   switch (wso.kind) {
     case CitySize[CitySize.big]: return Option.some(BigCity)
     case CitySize[CitySize.small]: return Option.some(SmallCity)

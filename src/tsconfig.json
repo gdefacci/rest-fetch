@@ -23,7 +23,7 @@
                 "lib/ResponseReader.ts",
 
                 "lib/SimpleConverter.ts",
-                "lib/ChooseConverter.ts",
+                "lib/Selector.ts",
                 "lib/types.ts",
                 "lib/TypeExpr.ts",
                 "lib/ObjectsCache.ts",

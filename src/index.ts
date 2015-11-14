@@ -10,4 +10,4 @@ export {convert} from "./lib/Converter"
 export {HttpCache, ByUrlCache} from "./lib/cache"
 
 export {SimpleConverter} from "./lib/SimpleConverter"
-export {ChooseConverter, ByPropertyChooseConverter} from "./lib/ChooseConverter"
+export {Selector, ByPropertySelector} from "./lib/Selector"

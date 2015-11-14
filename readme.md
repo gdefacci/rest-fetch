@@ -20,7 +20,7 @@ GET /persons/pippo
 ```
 
 ```
-GET /cities/RE =>
+GET /cities/RE
 ```
 
 ```json

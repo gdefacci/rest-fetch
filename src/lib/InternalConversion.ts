@@ -1,7 +1,7 @@
 import {JsType, ArrayJsType, OptionJsType, GetPropertyUrl} from "./types"
 import {ConstructorType, ObjectFetcher, PropertyName} from "./meta"
 import {SimpleConverter} from "./SimpleConverter"
-import {ChooseConverter} from "./ChooseConverter"
+import {Selector} from "./Selector"
 import {Option, isNull} from "flib"
 import {trap} from "./Util"
 

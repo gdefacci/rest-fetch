@@ -1,6 +1,6 @@
 import {ConstructorType} from "./meta"
 import {SimpleConverter} from "./SimpleConverter"
-import {ChooseConverter} from "./ChooseConverter"
+import {Selector} from "./Selector"
 import {isNull, Option} from "flib"
 
 export interface ArrayJsType<T> {
@@ -19,8 +19,8 @@ export class GetPropertyUrl<B> {
   }
 }
 
-export type ChooseConverterJsType<T> = ConstructorType<T> | ArrayJsType<T> | OptionJsType<T> | SimpleConverter<any, any> | GetPropertyUrl<any>
-export type JsType<T> = ChooseConverterJsType<T> | ChooseConverter
+export type SelectorJsType<T> = ConstructorType<T> | ArrayJsType<T> | OptionJsType<T> | SimpleConverter<any, any> | GetPropertyUrl<any>
+export type JsType<T> = SelectorJsType<T> | Selector
 
 export module JsType {
   function isPrimitiveType(a:any):boolean {
@@ -31,7 +31,7 @@ export module JsType {
     const notIsPrim = !isPrimitiveType(t)
     return !isNull(t) && notIsPrim && (
       (typeof t === "function") ||
-      (t instanceof SimpleConverter) || (t instanceof ChooseConverter) || (t instanceof GetPropertyUrl) ||
+      (t instanceof SimpleConverter) || (t instanceof Selector) || (t instanceof GetPropertyUrl) ||
       isArrayJsType(t) || isOptionJsType(t)
     )
   }
@@ -66,13 +66,13 @@ export module JsType {
     simple: (cnv: SimpleConverter<any, any>) => R,
     array: (t: ArrayJsType<any>) => R,
     option: (t: OptionJsType<any>) => R,
-    choose: (t: ChooseConverter) => R,
+    choose: (t: Selector) => R,
     propertyUrl: (t: GetPropertyUrl<any>) => R
   ):(t: JsType<any>) => R {
     return (t: JsType<any>) => {
       if (isNull(t)) throw new Error(`undefined JsType `)
       if (t instanceof SimpleConverter) return simple(t)
-      else if (t instanceof ChooseConverter) return choose(t)
+      else if (t instanceof Selector) return choose(t)
       else if (t instanceof GetPropertyUrl) return propertyUrl(t)
       else if (typeof t === "function") {
         if (!isPrimitiveType(t)) return typ(<any>t)
