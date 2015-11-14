@@ -1,8 +1,5 @@
 import {JsMap} from "flib"
 import {Option} from "flib"
-import {ConstructorType} from "./Meta"
-import {Arrays} from "flib"
-import {SimpleConverter} from "./SimpleConverter"
 
 export interface HttpCache {
   get(req:Request):Option<Promise<any>>

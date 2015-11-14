@@ -4,6 +4,7 @@ import {lazy, Arrays, Option, JsMap, isNull} from "flib"
 export class ChooseConverter implements ChooseConverter {
   constructor(public convert:(a:any) => Option<ChooseConverterJsType<any>>, public description?:string) {
   }
+  /*
   or(cnv:ChooseConverter, description?:string):ChooseConverter {
     const self = this
     return new ChooseConverter( a => {
@@ -13,6 +14,7 @@ export class ChooseConverter implements ChooseConverter {
       )
     }, description)
   }
+  */
 }
 
 export module ChooseConverter {

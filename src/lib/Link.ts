@@ -1,7 +1,7 @@
 import {JsType} from "./types"
 import {TypeExpr} from "./TypeExpr"
 import {PropertyName, PropertyHolder, getOrCreateLinksMeta, addObjectMapping, isArrayType, isOptionType} from "./Meta"
-import {isNull} from "flib"
+import {lazy, isNull} from "flib"
 
 export class Link {
   constructor(public resultType: TypeExpr, public targetProperty:PropertyName) {
@@ -14,34 +14,41 @@ export class Link {
   }
 }
 
-
+/**
+ * FIXME
+ * move validation logic outside, refactor
+ */
 export function link(typ?: JsType<any> | PropertyHolder, opts1?:PropertyHolder): (target: any, key: string | symbol) => void {
   return (target: any, key: string | symbol) => {
     const propType = Reflect.getMetadata("design:type", target, key)
+    const typIsNull = isNull(typ)
+    const errorPrefix = lazy(() => `Error on property '${key}' in class '${target.constructor.name}'`)
 
-    const optsIsJsType = JsType.isJsType(typ)
-    const linkType:JsType<any> = isNull(typ) || !optsIsJsType ? propType : typ;
+    const propTypeIsArray  = isArrayType(propType)
+    const typIsArrayJsType = JsType.isArrayJsType(typ)
+    if (propTypeIsArray && !typIsArrayJsType) throw new Error(`${errorPrefix()}: Array property with undefined 'arrayOf' property`)
+    else if (!propTypeIsArray && typIsArrayJsType) throw new Error(`${errorPrefix()}: with link of array type a property of type 'Array' is required`)
+
+    const propTypeIsOption = isOptionType(propType)
+    const typIsOptionJsType = JsType.isOptionJsType(typ)
+    if (propTypeIsOption && !typIsOptionJsType) throw new Error(`${errorPrefix()}: Option property with undefined 'optionOf' property`)
+    else if (!propTypeIsOption && typIsOptionJsType) throw new Error(`${errorPrefix()}: with link of option type a property of type 'Option' is required`)
+
+    const typIsJsType = JsType.isJsType(typ)
+    const linkType:JsType<any> = !typIsJsType ? propType : typ;
 
     if (isNull(linkType)) {
       throw new Error(`could not infer type from declaration of property '${key}' in class '${target.constructor.name}'`)
-    } if (optsIsJsType && !isNull(propType)) {
-      const nop = () => {}
-      JsType.fold(
-        nop,
-        nop,
-        (arr) => {
-          if (!isArrayType(propType)) throw new Error(`Error on property '${key}' in class '${target.constructor.name}': with link of array type a property of type 'Array' is required`)
-        },
-        (opt) => {
-          if (!isOptionType(propType)) throw new Error(`Error on property '${key}' in class '${target.constructor.name}': with link of option type a property of type 'Option' is required`)
-        },
-        nop,
-        nop
-      )(<any>typ)
     }
 
     const objLinks = getOrCreateLinksMeta(target.constructor)
     const targetProperty = (opts1 && opts1.property) || (typ && typ["property"]) || key;
-    addObjectMapping(objLinks, targetProperty, new Link(TypeExpr.fromJsType(linkType), key))
+    let linkJsTyp:TypeExpr
+    try {
+       linkJsTyp = TypeExpr.fromJsType(linkType)
+    } catch(e) {
+      throw new Error(`${errorPrefix()} : ${e.message}`)
+    }
+    addObjectMapping(objLinks, targetProperty, new Link(linkJsTyp, key))
   }
 }

@@ -19,7 +19,7 @@ export type ExtTypeExpr = LeafTypeExpr | TypeExpr
 
 export class TypeExpr {
   constructor(public kind:TypeExprKind, public folding:string, public leaf:LeafTypeExpr) {
-
+    
   }
   equalTo(b:TypeExpr):boolean {
     return this.kind === b.kind && this.folding === b.folding && this.leaf === b.leaf

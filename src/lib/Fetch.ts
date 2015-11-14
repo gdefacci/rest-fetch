@@ -183,7 +183,7 @@ function fetchUrl(url:string, context:Context):Promise<any> {
 
 function fetchLinkJsType(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
   const expectingArrayUrl = lazy(() => Promise.reject(`expecting an array but got ${url}`))
-  const expectingObjectUrl = lazy(() => Promise.reject(`expecting an object but got ${url}`))
+  const expectingObjectUrl = lazy(() => Promise.reject(`expecting an string but got ${url}`))
 
   return TypeExpr.foldExt<Promise<void>>(
     (resultType) => typeof url === "string" ? fetchObject(url, context, resultType, callback) : expectingObjectUrl(),
@@ -313,24 +313,24 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
 }
 
 function fetchInternal<T>(context: Context, typ: ConstructorType<T>): CallbackFetcher<T> {
-  //const linksMeta = typ && typ.linksMeta;
-  const linksMeta = typ && getLinksMeta(typ).getOrElse(() => undefined);
+  const linksMeta = typ && getLinksMeta(typ) //.getOrElse(() => undefined);
   const typExpr = TypeExpr.fromJsType(typ)
   return {
     fetch: (req: Request, callback: (v: T) => void):Promise<any> => {
 
       const prom = () => httpFetch(req, context.httpCache, context.responseReader).then(a => {
-        if (linksMeta !== undefined) {
-          return fetchProperties(context, typ, a, req.url).then(u => {
+        return linksMeta.fold<any>(
+          () => {
+            const r: T = new typ()
+            Object.keys(a).forEach(k => r[k] = a[k])
+            callback(r)
+            return r;
+          },
+          (linksMeta) => fetchProperties(context, typ, a, req.url).then(u => {
             callback(u);
             return u;
           })
-        } else {
-          const r: T = new typ()
-          Object.keys(a).forEach(k => r[k] = a[k])
-          callback(r)
-          return r;
-        }
+        )
       }, err => {
         console.log("Error")
         console.log(err)

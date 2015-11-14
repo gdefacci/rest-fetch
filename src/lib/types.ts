@@ -23,12 +23,43 @@ export type ChooseConverterJsType<T> = ConstructorType<T> | ArrayJsType<T> | Opt
 export type JsType<T> = ChooseConverterJsType<T> | ChooseConverter
 
 export module JsType {
+  function isPrimitiveType(a:any):boolean {
+    return a === String || a === Number || a === Boolean
+  }
+
   export function isJsType(t:any):boolean {
-    return (!isNull(t)) && (
+    const notIsPrim = !isPrimitiveType(t)
+    return !isNull(t) && notIsPrim && (
       (typeof t === "function") ||
       (t instanceof SimpleConverter) || (t instanceof ChooseConverter) || (t instanceof GetPropertyUrl) ||
-      isJsType(t["arrayOf"]) || isJsType(t["optionOf"])
+      isArrayJsType(t) || isOptionJsType(t)
     )
+  }
+
+  function trapBoolean(f:() => boolean):boolean {
+    try {
+      return f()
+    } catch(e) {
+      return false;
+    }
+  }
+
+  function hasJsTypeProperty(a:any, property:string, desc:string) {
+    if (!isNull(a) && a.hasOwnProperty(property)) {
+      const itmType = a[property]
+      const itmIsJsTyp = isJsType(itmType)
+      //if (!itmIsJsTyp) throw new Error(`${desc} is invalid :${itmType}`)
+      return itmIsJsTyp;
+    } else
+      return false
+  }
+
+  export function isArrayJsType(a:any) {
+    return hasJsTypeProperty(a, "arrayOf", "arrayOf parameter")
+  }
+
+  export function isOptionJsType(a:any) {
+    return hasJsTypeProperty(a, "optionOf", "optionOf parameter")
   }
 
   export function fold<R>(typ: (t: ConstructorType<any>) => R,
@@ -43,9 +74,11 @@ export module JsType {
       if (t instanceof SimpleConverter) return simple(t)
       else if (t instanceof ChooseConverter) return choose(t)
       else if (t instanceof GetPropertyUrl) return propertyUrl(t)
-      else if (typeof t === "function") return typ(<any>t)
-      else if (isJsType(t["arrayOf"])) return array(<any>t)
-      else if (isJsType(t["optionOf"])) return option(<any>t)
+      else if (typeof t === "function") {
+        if (!isPrimitiveType(t)) return typ(<any>t)
+        else throw new Error(`invalid constructor type ${t}`)
+      } else if (isArrayJsType(t)) return array(<any>t)
+      else if (isOptionJsType(t)) return option(<any>t)
       else throw new Error(`unrecognized JsType ${JSON.stringify(t)}`)
     }
   }

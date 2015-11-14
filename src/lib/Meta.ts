@@ -1,55 +1,24 @@
-import {isNull, Option, JsMap} from "flib"
+import {Option, JsMap} from "flib"
 import {Link} from "./Link"
 import {Converter} from "./Converter"
-import {EntriesMap, Entry as EEntry} from "./EntriesMap"
+import {EntriesMap} from "./EntriesMap"
 
 export type ObjectMapping = JsMap<(Link | Converter)[]>
 
 export type PropertyName = string | symbol;
 
-/*
-const annotationName = "linksmeta:annotation"
-
-export function addObjectMapping(mp:ObjectMapping, k:PropertyName, v:Link | Converter) {
-  Option.option(mp[k]).fold<void>(
-    () => mp[k] = [v],
-    (entries) => entries.push(v)
-  )
-}
-
-export function getOrCreateLinksMeta<T>(c:ConstructorType<T>):ObjectMapping {
-  let linksMeta = Reflect.getMetadata(annotationName, c)
-  if (isNull(linksMeta)) {
-    linksMeta = {};
-    Reflect.defineMetadata(annotationName, c, linksMeta)
-  }
-  return linksMeta;
-}
-
-export function getLinksMeta<T>(ct:ConstructorType<T>) {
-  return Reflect.getMetadata(annotationName, ct)
-}
-*/
-
 export interface ConstructorType<T> extends Function {
   new (): T
   name?:string
-  //linksMeta?:ObjectMapping
 }
 
 export interface PropertyHolder {
   property?:string
 }
 
-/*
-export interface ObjectFetcher {
-  fetch<T>(typ: ConstructorType<T>, wso:any):Promise<T>
-}
-*/
 export interface ObjectFetcher {
   <T>(typ: ConstructorType<T>, wso:any):Promise<T>
 }
-
 
 function eq(a,b){
   return a === b;
@@ -63,7 +32,7 @@ export function isArrayType(a:ConstructorType<any>):boolean {
   return eq(a, Array)
 }
 
-class MetaLinksMap {
+export class MetaLinksMap {
   linksMeta:EntriesMap<ConstructorType<any>, ObjectMapping>
   constructor() {
     this.linksMeta = new EntriesMap<ConstructorType<any>, ObjectMapping>( (a,b) => a === b )
@@ -76,7 +45,42 @@ class MetaLinksMap {
   }
 }
 
-const linksMeta = new MetaLinksMap()
+
+export module ExternalStrategy {
+  /**
+  * FIXME
+  * refactor folling methods
+  */
+  const linksMeta = new MetaLinksMap()
+
+  function copyObjectMapping(o:ObjectMapping):ObjectMapping {
+    const res:ObjectMapping = {}
+    Object.keys(o).forEach( k => res[k] = o[k].map(c => c) )
+    return res;
+  }
+
+  function superClassConstructor(c:ConstructorType<any>):ConstructorType<any> {
+    return c.prototype.__proto__.constructor;
+  }
+
+  export function getLinksMeta<T>(c:ConstructorType<T>):Option<ObjectMapping> {
+    return linksMeta.get(c)
+  }
+
+
+  export function getOrCreateLinksMeta<T>(c:ConstructorType<T>):ObjectMapping {
+    return linksMeta.get(c).fold<ObjectMapping>(
+      () => {
+        const sup = getLinksMeta(superClassConstructor(c))
+        const lnks:ObjectMapping = sup.map( sup => copyObjectMapping(sup)).getOrElse(() => { return {} })
+        linksMeta.store(c, lnks)
+        return lnks
+      },
+      (v) => v
+    )
+  }
+
+}
 
 export function addObjectMapping(mp:ObjectMapping, k:PropertyName, v:Link | Converter) {
   Option.option(mp[k]).fold<void>(
@@ -85,34 +89,5 @@ export function addObjectMapping(mp:ObjectMapping, k:PropertyName, v:Link | Conv
   )
 }
 
-export function getLinksMeta<T>(c:ConstructorType<T>):Option<ObjectMapping> {
-  return linksMeta.get(c)
-}
-export function getOrCreateLinksMeta<T>(c:ConstructorType<T>):ObjectMapping {
-  return linksMeta.get(c).fold<ObjectMapping>(
-    () => {
-      const sup = getLinksMeta(c.prototype.__proto__.constructor).getOrElse( () => undefined )
-      const lnks:ObjectMapping = (sup ===undefined) ? {} : JsMap.map(sup, (k,v) =>v)
-      linksMeta.store(c, lnks)
-      return lnks
-    },
-    (v) => v
-  )
-}
-
-
-export function old_addObjectMapping(mp:ObjectMapping, k:PropertyName, v:Link | Converter) {
-  Option.option(mp[k]).fold<void>(
-    () => mp[k] = [v],
-    (entries) => entries.push(v)
-  )
-}
-
-/*
-export function old_getOrCreateLinksMeta<T>(c:ConstructorType<T>):ObjectMapping {
-  if (c.linksMeta === undefined) {
-    c.linksMeta = {}
-  }
-  return c.linksMeta;
-}
-*/
+export const getLinksMeta = ExternalStrategy.getLinksMeta
+export const getOrCreateLinksMeta = ExternalStrategy.getOrCreateLinksMeta
