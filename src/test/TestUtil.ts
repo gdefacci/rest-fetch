@@ -26,9 +26,11 @@ export function checkFail(f:() => any, desc?:string) {
     f()
     failed = true
   } catch(e) {
+    /*
     console.log("checked exeption")
     console.log(e)
     console.log("======================================")
+    */
   }
   if (failed) throw new Error(`${desc || ""} did not failed `)
 }

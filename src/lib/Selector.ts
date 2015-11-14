@@ -2,7 +2,7 @@ import {SelectorJsType} from "./types"
 import {lazy, Arrays, Option, JsMap, isNull} from "flib"
 
 export class Selector implements Selector {
-  constructor(public convert:(a:any) => Option<SelectorJsType<any>>, public description?:string) {
+  constructor(public convert:(a:any) => Option<SelectorJsType>, public description?:string) {
   }
   /*
   or(cnv:Selector, description?:string):Selector {
@@ -19,15 +19,15 @@ export class Selector implements Selector {
 
 export module Selector {
 
-  export function create(f:(a:any) => Option<SelectorJsType<any>>, description?:string):Selector {
+  export function create(f:(a:any) => Option<SelectorJsType>, description?:string):Selector {
     return new Selector(f, description)
   }
 
-  export function value(ct:SelectorJsType<any>):Selector {
+  export function value(ct:SelectorJsType):Selector {
     return create(a => Option.some(ct))
   }
 
-  export function byPropertyExists(entries:JsMap.Entry<SelectorJsType<any>>[], description?:string) {
+  export function byPropertyExists(entries:JsMap.Entry<SelectorJsType>[], description?:string) {
     return new Selector(
       ws => Arrays.find(entries, e => !isNull(ws[e.key])).map(e => e.value),
       description)
@@ -36,7 +36,7 @@ export module Selector {
 }
 
 export class ByPropertySelector extends Selector {
-  constructor(prop:(a:any) => string, private jsMap:() => JsMap<SelectorJsType<any>>, desc:string) {
+  constructor(prop:(a:any) => string, private jsMap:() => JsMap<SelectorJsType>, desc:string) {
     super( (a) => {
       const pv = prop(a)
       return Option.option(jsMap()[pv]);
@@ -49,7 +49,7 @@ export class ByPropertySelector extends Selector {
 
 export module ByPropertySelector {
 
-  export function fromEntries(prop:(a:any) => string, bks:() => JsMap.Entry<SelectorJsType<any>>[], desc:string) {
+  export function fromEntries(prop:(a:any) => string, bks:() => JsMap.Entry<SelectorJsType>[], desc:string) {
     const mp = lazy( () => JsMap.create(bks()))
     return new ByPropertySelector(prop, mp, desc)
   }

@@ -1,4 +1,4 @@
-import {JsType} from "../lib/types"
+import {MappingType} from "../lib/types"
 import {assert} from "./TestUtil"
 
 export function test1() {
@@ -7,8 +7,8 @@ export function test1() {
 
   }
 
-  assert(JsType.isArrayJsType({ arrayOf:MyRes }))
-  assert(!JsType.isArrayJsType({ arrayOf:String }), "{ arrayOf:String } is not as JsType")
+  assert(MappingType.isArrayJsType({ arrayOf:MyRes }))
+  assert(!MappingType.isArrayJsType({ arrayOf:String }), "{ arrayOf:String } is not as MappingType")
 
 
 }

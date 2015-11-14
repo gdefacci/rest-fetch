@@ -1,6 +1,6 @@
 import {fail, Option} from "flib"
 import {EntriesMap} from "../lib/EntriesMap"
-import {ConstructorType, MetaLinksMap, ObjectMapping} from "../lib/Meta"
+import {MetaLinksMap, ObjectMapping} from "../lib/Meta"
 import {assert} from "./TestUtil"
 
 class Cl1 {

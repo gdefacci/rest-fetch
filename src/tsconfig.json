@@ -17,7 +17,6 @@
 
                 "lib/EntriesMap.ts",
                 "lib/Util.ts",
-                "lib/Meta.ts",
                 "lib/cache.ts",
                 "lib/RequestFactory.ts",
                 "lib/ResponseReader.ts",
@@ -28,6 +27,7 @@
                 "lib/TypeExpr.ts",
                 "lib/ObjectsCache.ts",
 
+                "lib/Meta.ts",
                 "lib/Retriever.ts",
                 "lib/Converter.ts",
 

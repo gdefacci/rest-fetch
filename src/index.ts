@@ -1,9 +1,9 @@
 export {link} from "./lib/Link"
 export {fetch, fetchChoose} from "./lib/Fetch"
-export {ConstructorType} from "./lib/Meta"
+export {JsConstructor} from "./lib/types"
 
-import * as Converter from "./lib/Converter"  
-export {Converter as Converter}           
+import * as Converter from "./lib/Converter"
+export {Converter as Converter}
 
 export {convert} from "./lib/Converter"
 

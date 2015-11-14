@@ -1,6 +1,5 @@
 import {JsMap, Option, Arrays} from "flib"
-import {JsType, GetPropertyUrl} from "./types"
-import {ConstructorType} from "./Meta"
+import {JsConstructor, MappingType, GetPropertyUrl} from "./types"
 import {SimpleConverter} from "./SimpleConverter"
 import {Selector} from "./Selector"
 
@@ -13,13 +12,13 @@ export enum TypeExprKind {
   getPropertyUrl = 5
 }
 
-export type LeafTypeExpr = ConstructorType<any> | SimpleConverter<any,any> | Selector | GetPropertyUrl<any>
+export type LeafTypeExpr = JsConstructor<any> | SimpleConverter<any,any> | Selector | GetPropertyUrl<any>
 
 export type ExtTypeExpr = LeafTypeExpr | TypeExpr
 
 export class TypeExpr {
   constructor(public kind:TypeExprKind, public folding:string, public leaf:LeafTypeExpr) {
-    
+
   }
   equalTo(b:TypeExpr):boolean {
     return this.kind === b.kind && this.folding === b.folding && this.leaf === b.leaf
@@ -62,7 +61,7 @@ export class TypeExpr {
 
 export module LeafTypeExpr {
 
-  export function fold<R>(typ: (t: ConstructorType<any>) => R,
+  export function fold<R>(typ: (t: JsConstructor<any>) => R,
     simple: (cnv: SimpleConverter<any, any>) => R,
     choose: (cnv:Selector) => R,
     propertyUrl: (t: GetPropertyUrl<any>) => R
@@ -90,11 +89,11 @@ export module LeafTypeExpr {
 
 export module TypeExpr {
 
-  export function create(ct:ConstructorType<any>) {
+  export function create(ct:JsConstructor<any>) {
     return new TypeExpr(TypeExprKind.constructorFunction, "", ct)
   }
 
-  export const fromJsType:(a:JsType<any>) => TypeExpr = JsType.fold(
+  export const fromJsType:(a:MappingType) => TypeExpr = MappingType.fold(
     (ct) => new TypeExpr(TypeExprKind.constructorFunction, "", ct),
     (cnv) => new TypeExpr(TypeExprKind.simpleConverter, "", cnv),
     (arr) => {
@@ -109,7 +108,7 @@ export module TypeExpr {
     (gpu) => new TypeExpr(TypeExprKind.getPropertyUrl, "", gpu)
   )
 
- export function fold<R>(typ: (t: ConstructorType<any>) => R,
+ export function fold<R>(typ: (t: JsConstructor<any>) => R,
     simple: (cnv: SimpleConverter<any, any>) => R,
     array: (t: TypeExpr) => R,
     option: (t: TypeExpr) => R,
@@ -132,7 +131,7 @@ export module TypeExpr {
     }
   }
 
-  export function foldExt<R>(typ: (t: ConstructorType<any>) => R,
+  export function foldExt<R>(typ: (t: JsConstructor<any>) => R,
     simple: (cnv: SimpleConverter<any, any>) => R,
     array: (t: TypeExpr) => R,
     option: (t: TypeExpr) => R,

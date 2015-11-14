@@ -1,5 +1,5 @@
-import {JsType, ArrayJsType, OptionJsType, GetPropertyUrl} from "./types"
-import {ConstructorType, ObjectFetcher, PropertyName} from "./meta"
+import {JsConstructor, MappingType, ArrayMappingType, OptionMappingType, GetPropertyUrl} from "./types"
+import {ObjectFetcher} from "./meta"
 import {SimpleConverter} from "./SimpleConverter"
 import {Selector} from "./Selector"
 import {Option, isNull} from "flib"
@@ -13,8 +13,8 @@ function failedConversion(msg:string):InternalConversionTo<any> {
   }
 }
 
-export const jsTypeToInternalConversion:(topts:JsType<any>) => InternalConversionTo<any> =
-  JsType.fold<InternalConversionTo<any>>(
+export const jsTypeToInternalConversion:(topts:MappingType) => InternalConversionTo<any> =
+  MappingType.fold<InternalConversionTo<any>>(
     (ct) => (a:any, objectFetcher:ObjectFetcher, parentUrl:Option<string>):Promise<any>  => {
         return objectFetcher(ct, a)
     },

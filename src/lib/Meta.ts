@@ -2,45 +2,41 @@ import {Option, JsMap} from "flib"
 import {Link} from "./Link"
 import {Converter} from "./Converter"
 import {EntriesMap} from "./EntriesMap"
+import {JsConstructor} from "./types"
 
 export type ObjectMapping = JsMap<(Link | Converter)[]>
 
 export type PropertyName = string | symbol;
-
-export interface ConstructorType<T> extends Function {
-  new (): T
-  name?:string
-}
 
 export interface PropertyHolder {
   property?:string
 }
 
 export interface ObjectFetcher {
-  <T>(typ: ConstructorType<T>, wso:any):Promise<T>
+  <T>(typ: JsConstructor<T>, wso:any):Promise<T>
 }
 
 function eq(a,b){
   return a === b;
 }
 
-export function isOptionType(a:ConstructorType<any>):boolean {
+export function isOptionType(a:JsConstructor<any>):boolean {
   return eq(a, Option)
 }
 
-export function isArrayType(a:ConstructorType<any>):boolean {
+export function isArrayType(a:JsConstructor<any>):boolean {
   return eq(a, Array)
 }
 
 export class MetaLinksMap {
-  linksMeta:EntriesMap<ConstructorType<any>, ObjectMapping>
+  linksMeta:EntriesMap<JsConstructor<any>, ObjectMapping>
   constructor() {
-    this.linksMeta = new EntriesMap<ConstructorType<any>, ObjectMapping>( (a,b) => a === b )
+    this.linksMeta = new EntriesMap<JsConstructor<any>, ObjectMapping>( (a,b) => a === b )
   }
-  get(ct:ConstructorType<any>):Option<ObjectMapping> {
+  get(ct:JsConstructor<any>):Option<ObjectMapping> {
     return this.linksMeta.get(ct.name, ct)
   }
-  store(ct:ConstructorType<any>, v:ObjectMapping):void {
+  store(ct:JsConstructor<any>, v:ObjectMapping):void {
     this.linksMeta.store(ct.name, ct, v)
   }
 }
@@ -59,16 +55,16 @@ export module ExternalStrategy {
     return res;
   }
 
-  function superClassConstructor(c:ConstructorType<any>):ConstructorType<any> {
+  function superClassConstructor(c:JsConstructor<any>):JsConstructor<any> {
     return c.prototype.__proto__.constructor;
   }
 
-  export function getLinksMeta<T>(c:ConstructorType<T>):Option<ObjectMapping> {
+  export function getLinksMeta<T>(c:JsConstructor<T>):Option<ObjectMapping> {
     return linksMeta.get(c)
   }
 
 
-  export function getOrCreateLinksMeta<T>(c:ConstructorType<T>):ObjectMapping {
+  export function getOrCreateLinksMeta<T>(c:JsConstructor<T>):ObjectMapping {
     return linksMeta.get(c).fold<ObjectMapping>(
       () => {
         const sup = getLinksMeta(superClassConstructor(c))

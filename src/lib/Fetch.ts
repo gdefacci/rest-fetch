@@ -2,11 +2,11 @@ import {JsMap, Option, isNull, lazy} from "flib"
 import {ResponseReader, jsonResponseReader} from "./ResponseReader"
 import {RequestFactory, createRequestFactory} from "./RequestFactory"
 import {HttpCache, ByUrlCache} from "./cache"
-import {ObjectFetcher, ConstructorType, isOptionType, getLinksMeta} from "./Meta"
+import {ObjectFetcher, isOptionType, getLinksMeta} from "./Meta"
 import {Link} from "./Link"
 import {Converter} from "./Converter"
 import {ResourceRetriever, ArrayResourceRetriever} from "./Retriever"
-import {JsType} from "./types"
+import {JsConstructor, MappingType} from "./types"
 import {trap} from "./Util"
 import {InternalConversionTo, jsTypeToInternalConversion} from "./InternalConversion"
 import {Selector} from "./Selector"
@@ -28,15 +28,15 @@ interface Context {
   promisesToWait: Promise<any>[]
 }
 
-function createJsTypeRetriever(typ:JsType<any>, opts?:FetchOpts):JsTypeRetriever {
+function createJsTypeRetriever(typ:MappingType, opts?:FetchOpts):JsTypeRetriever {
   return new JsTypeRetriever(typ, createContext(opts))
 }
 
-export function fetch<T>(typ:ConstructorType<T>, opts?:FetchOpts):ResourceRetriever<T> {
+export function fetch<T>(typ:JsConstructor<T>, opts?:FetchOpts):ResourceRetriever<T> {
   return createJsTypeRetriever(typ, opts)
 }
 
-export function fetchArray<T>(typ:ConstructorType<T>, opts?:FetchOpts):ArrayResourceRetriever<T[]> {
+export function fetchArray<T>(typ:JsConstructor<T>, opts?:FetchOpts):ArrayResourceRetriever<T[]> {
   return createJsTypeRetriever({ arrayOf:typ }, opts)
 }
 
@@ -55,7 +55,7 @@ function createContext(opts?: FetchOpts):Context {
 }
 
 function objectFetcherImpl<T>(context:Context) {
-  return <T>(typ: ConstructorType<T>, wso:any):Promise<T> => {
+  return <T>(typ: JsConstructor<T>, wso:any):Promise<T> => {
     return fetchProperties(context, typ, wso)
   }
 }
@@ -65,7 +65,7 @@ class JsTypeRetriever implements ResourceRetriever<any> {
   cnv:() => InternalConversionTo<any>
   isArrayJsType:() => boolean
   private typeExpr:() => TypeExpr
-  constructor(private typ:JsType<any>, private context:Context) {
+  constructor(private typ:MappingType, private context:Context) {
     this.objectFetcher = lazy(() => objectFetcherImpl(this.context))
     this.typeExpr = lazy(() => TypeExpr.fromJsType(this.typ))
     this.cnv = lazy(() => jsTypeToInternalConversion(this.typ))
@@ -86,7 +86,7 @@ class JsTypeRetriever implements ResourceRetriever<any> {
   }
   from(url:string, req?: RequestInit):Promise<any> {
     if (this.isArrayJsType()) {
-      return Promise.reject(`trying to get an ArrayJsType from ${url}`)
+      return Promise.reject(`trying to get an ArrayMappingType from ${url}`)
     } else {
       const rq = req !== undefined ? new Request(url, req) : this.context.requestFactory(url);
       let res:any = undefined
@@ -121,7 +121,7 @@ function log(msg:() => string) {
   //console.log(msg())
 }
 
-function fetchProperties<T>(context: Context, typ: ConstructorType<T>, wsobj: any, parentUrl?:string):Promise<T> {
+function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any, parentUrl?:string):Promise<T> {
 
   log( () =>`fetching properties of ${typ.name} from ${JSON.stringify(wsobj, undefined, "")}`)
 
@@ -172,7 +172,7 @@ function fetchProperties<T>(context: Context, typ: ConstructorType<T>, wsobj: an
 }
 
 
-function fetchObject<T>(url:string, context:Context, resultType:ConstructorType<T>, callback:(a:T) => void):Promise<void> {
+function fetchObject<T>(url:string, context:Context, resultType:JsConstructor<T>, callback:(a:T) => void):Promise<void> {
   if (isNull(resultType)) return Promise.reject(`undefined resultType`)
   else return fetchInternal(context, resultType).fetch(context.requestFactory(url), callback)
 }
@@ -312,7 +312,7 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
   )
 }
 
-function fetchInternal<T>(context: Context, typ: ConstructorType<T>): CallbackFetcher<T> {
+function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetcher<T> {
   const linksMeta = typ && getLinksMeta(typ) //.getOrElse(() => undefined);
   const typExpr = TypeExpr.fromJsType(typ)
   return {

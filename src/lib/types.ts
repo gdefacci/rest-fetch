@@ -1,14 +1,18 @@
-import {ConstructorType} from "./meta"
 import {SimpleConverter} from "./SimpleConverter"
 import {Selector} from "./Selector"
 import {isNull, Option} from "flib"
 
-export interface ArrayJsType<T> {
-  arrayOf: JsType<T>
+export interface JsConstructor<T> extends Function {
+  new (): T
+  name?:string
 }
 
-export interface OptionJsType<T> {
-  optionOf: JsType<T>
+export interface ArrayMappingType {
+  arrayOf: MappingType
+}
+
+export interface OptionMappingType {
+  optionOf: MappingType
 }
 
 export class GetPropertyUrl<B> {
@@ -19,10 +23,10 @@ export class GetPropertyUrl<B> {
   }
 }
 
-export type SelectorJsType<T> = ConstructorType<T> | ArrayJsType<T> | OptionJsType<T> | SimpleConverter<any, any> | GetPropertyUrl<any>
-export type JsType<T> = SelectorJsType<T> | Selector
+export type SelectorJsType = JsConstructor<any> | ArrayMappingType | OptionMappingType | SimpleConverter<any, any> | GetPropertyUrl<any>
+export type MappingType = SelectorJsType | Selector
 
-export module JsType {
+export module MappingType {
   function isPrimitiveType(a:any):boolean {
     return a === String || a === Number || a === Boolean
   }
@@ -62,15 +66,15 @@ export module JsType {
     return hasJsTypeProperty(a, "optionOf", "optionOf parameter")
   }
 
-  export function fold<R>(typ: (t: ConstructorType<any>) => R,
+  export function fold<R>(typ: (t: JsConstructor<any>) => R,
     simple: (cnv: SimpleConverter<any, any>) => R,
-    array: (t: ArrayJsType<any>) => R,
-    option: (t: OptionJsType<any>) => R,
+    array: (t: ArrayMappingType) => R,
+    option: (t: OptionMappingType) => R,
     choose: (t: Selector) => R,
     propertyUrl: (t: GetPropertyUrl<any>) => R
-  ):(t: JsType<any>) => R {
-    return (t: JsType<any>) => {
-      if (isNull(t)) throw new Error(`undefined JsType `)
+  ):(t: MappingType) => R {
+    return (t: MappingType) => {
+      if (isNull(t)) throw new Error(`undefined MappingType `)
       if (t instanceof SimpleConverter) return simple(t)
       else if (t instanceof Selector) return choose(t)
       else if (t instanceof GetPropertyUrl) return propertyUrl(t)
@@ -79,11 +83,11 @@ export module JsType {
         else throw new Error(`invalid constructor type ${t}`)
       } else if (isArrayJsType(t)) return array(<any>t)
       else if (isOptionJsType(t)) return option(<any>t)
-      else throw new Error(`unrecognized JsType ${JSON.stringify(t)}`)
+      else throw new Error(`unrecognized MappingType ${JSON.stringify(t)}`)
     }
   }
 
-  export const description:(typ:JsType<any>) => string =
+  export const description:(typ:MappingType) => string =
     fold<string>(
       (ct) => `object ${ct.name}`,
       (simpleCnv) => `simple converter ${simpleCnv.description}`,

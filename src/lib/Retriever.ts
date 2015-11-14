@@ -1,4 +1,4 @@
-import {ConstructorType} from "./meta"
+import {JsConstructor} from "./types"
 
 export interface Retriever<B> {
   fromObject(obj:any):Promise<B>

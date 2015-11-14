@@ -1,5 +1,5 @@
 import {Option, fail} from "flib"
-import {link, fetch, convert, Converter, SimpleConverter, Selector, ConstructorType, ByUrlCache} from "../index"
+import {link, fetch, convert, Converter, SimpleConverter, Selector, JsConstructor, ByUrlCache} from "../index"
 import * as test2 from "./test2"
 
 export class City {
