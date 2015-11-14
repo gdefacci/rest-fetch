@@ -38,7 +38,12 @@
 
                 "index.ts",
 
+                "test/TestUtil.ts",
+                "test/JsTypeTest.ts",
                 "test/test1.ts",
-                "test/test2.ts"
+                "test/test2.ts",
+                "test/EntriesMapTest.ts",
+                "test/error1.ts",
+                "test/All.ts"
 	]
 }

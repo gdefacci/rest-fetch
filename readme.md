@@ -97,5 +97,4 @@ Issues/Limitations
 
 - classes instantiation is done invoking the constructor with no arguments 
 - @link() and @convert() annotations can be specified only for properties of classes 
-- overriding @link() or @convert() annotations in subclasses is actually broken
 - class declaration order matters, actually you can only reference a previously defined class in link, or convert annotations

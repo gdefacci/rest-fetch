@@ -130,7 +130,82 @@ export function test0(data) {
     })
 }
 
-export function test1(data) {
+const data = {
+  "http://localhost:8080/persons/qua" : {
+    "name" : "qua",
+    "favCity" : "http://localhost:8080/cities/MI",
+    "doctor" : "http://localhost:8080/persons/pippo",
+    "friends" : [
+      "http://localhost:8080/persons/qua"
+    ],
+    "address" : "http://localhost:8080/persons/qua/address",
+    "favouriteColor" : "black"
+  },
+  "http://localhost:8080/persons/pippo":{
+    "name" : "pippo",
+    "favCity" : "http://localhost:8080/cities/RE",
+    "doctor" : "http://localhost:8080/persons/paperoga",
+    "friends" : [
+      "http://localhost:8080/persons/minni"
+    ],
+    "address" : "http://localhost:8080/persons/pippo/address",
+    "favouriteColor" : "red"
+  },
+  "http://localhost:8080/persons/paperoga":{
+    "name" : "paperoga",
+    "favCity" : "http://localhost:8080/cities/RE",
+    "doctor" : "http://localhost:8080/persons/paperoga",
+    "friends" : [
+      "http://localhost:8080/persons/minni",
+      "http://localhost:8080/persons/pippo"
+    ],
+    "address" : "http://localhost:8080/persons/paperoga/address",
+    "favouriteColor" : "white"
+  },
+  "http://localhost:8080/persons/minni":{
+    "name" : "minni",
+    "favCity" : "http://localhost:8080/cities/RE",
+    "doctor" : "http://localhost:8080/persons/paperoga",
+    "friends" : [
+      "http://localhost:8080/persons/pippo"
+    ],
+    "address" : "http://localhost:8080/persons/minni/address",
+    "favouriteColor" : "white"
+  },
+
+  "http://localhost:8080/persons/qua/address":{
+    "street" : "circolare",
+    "city" : "http://localhost:8080/cities/MI"
+  },
+  "http://localhost:8080/persons/pippo/address":{
+    "street" : "dei pomi",
+    "city" : "http://localhost:8080/cities/RE"
+  },
+  "http://localhost:8080/persons/minni/address":{
+    "street" : "dei tigli",
+    "city" : "http://localhost:8080/cities/MI"
+  },
+  "http://localhost:8080/persons/paperoga/address":{
+    "street" : "delle rose",
+    "city" : "http://localhost:8080/cities/DO"
+  },
+
+  "http://localhost:8080/cities/DO":{
+    "name" : "DO",
+    "kind" : "small",
+    "self": "http://localhost:8080/cities/DO"
+  },
+  "http://localhost:8080/cities/RE":{
+    "name" : "RE",
+    "kind" : "small"
+  },
+  "http://localhost:8080/cities/MI":{
+    "name" : "MI",
+    "kind" : "big"
+  }
+}
+
+export function test1() {
   const promises: Promise<void>[] = []
 
   const testHttpCache = new ByUrlCache()
@@ -212,94 +287,5 @@ export function test1(data) {
   )
 
 
-  return Promise.all(promises).then(v => console.log("test done "))
+  return Promise.all(promises)
 }
-
-const data = {
-  "http://localhost:8080/persons/qua" : {
-    "name" : "qua",
-    "favCity" : "http://localhost:8080/cities/MI",
-    "doctor" : "http://localhost:8080/persons/pippo",
-    "friends" : [
-      "http://localhost:8080/persons/qua"
-    ],
-    "address" : "http://localhost:8080/persons/qua/address",
-    "favouriteColor" : "black"
-  },
-  "http://localhost:8080/persons/pippo":{
-    "name" : "pippo",
-    "favCity" : "http://localhost:8080/cities/RE",
-    "doctor" : "http://localhost:8080/persons/paperoga",
-    "friends" : [
-      "http://localhost:8080/persons/minni"
-    ],
-    "address" : "http://localhost:8080/persons/pippo/address",
-    "favouriteColor" : "red"
-  },
-  "http://localhost:8080/persons/paperoga":{
-    "name" : "paperoga",
-    "favCity" : "http://localhost:8080/cities/RE",
-    "doctor" : "http://localhost:8080/persons/paperoga",
-    "friends" : [
-      "http://localhost:8080/persons/minni",
-      "http://localhost:8080/persons/pippo"
-    ],
-    "address" : "http://localhost:8080/persons/paperoga/address",
-    "favouriteColor" : "white"
-  },
-  "http://localhost:8080/persons/minni":{
-    "name" : "minni",
-    "favCity" : "http://localhost:8080/cities/RE",
-    "doctor" : "http://localhost:8080/persons/paperoga",
-    "friends" : [
-      "http://localhost:8080/persons/pippo"
-    ],
-    "address" : "http://localhost:8080/persons/minni/address",
-    "favouriteColor" : "white"
-  },
-
-  "http://localhost:8080/persons/qua/address":{
-    "street" : "circolare",
-    "city" : "http://localhost:8080/cities/MI"
-  },
-  "http://localhost:8080/persons/pippo/address":{
-    "street" : "dei pomi",
-    "city" : "http://localhost:8080/cities/RE"
-  },
-  "http://localhost:8080/persons/minni/address":{
-    "street" : "dei tigli",
-    "city" : "http://localhost:8080/cities/MI"
-  },
-  "http://localhost:8080/persons/paperoga/address":{
-    "street" : "delle rose",
-    "city" : "http://localhost:8080/cities/DO"
-  },
-
-  "http://localhost:8080/cities/DO":{
-    "name" : "DO",
-    "kind" : "small",
-    "self": "http://localhost:8080/cities/DO"
-  },
-  "http://localhost:8080/cities/RE":{
-    "name" : "RE",
-    "kind" : "small"
-  },
-  "http://localhost:8080/cities/MI":{
-    "name" : "MI",
-    "kind" : "big"
-  }
-}
-
-export function allTests() {
-  return Promise.all([
-    test1(data),
-    test2.Test1.test1(),
-    test2.Test2.test1(),
-    test2.Test3.test1(),
-    test2.Test4.test1(),
-    test2.Test5.test1()
-    //,test2.Test5.test2()
-  ])
-}
-
-allTests().then( u => document.body.appendChild( document.createTextNode("tests done")) )

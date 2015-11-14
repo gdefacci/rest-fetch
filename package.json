@@ -31,7 +31,8 @@
   "scripts":{
     "clean":"rimraf index.js* index.d.ts test1.browser.js* lib test",
     "prepublish" : "tsc -p src --outDir .",
-    "mkTest" : "webpack --config ./scripts/test-webpack.config.js"
+    "mkTest" : "webpack --config ./scripts/test-webpack.config.js",
+    "webdev" : "webpack --config ./scripts/test-webpack.config.js --watch"
   },
   "repository": {
     "type": "git",

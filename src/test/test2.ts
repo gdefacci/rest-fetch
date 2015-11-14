@@ -229,14 +229,12 @@ export module Test5 {
     surname:string
   }
 
-  /*
   class ResC extends ResA {
     @convert(conv2)
     name:number
     @convert(upper)
     surname:string
   }
-  */
 
   const data = {
     "/res-a/pippo":{
@@ -253,7 +251,6 @@ export module Test5 {
     })
   }
 
-  /*
   export function test2() {
     const opts = testOpts(data)
     return fetch(ResC, opts).from("/res-a/pippo").then(resa => {
@@ -261,5 +258,67 @@ export module Test5 {
       assert(resa.surname === "SURNAME")
     })
   }
-  */
+}
+
+export module Test6 {
+
+  class Item1 {
+     name:string
+   }
+
+   class Item2 extends Item1 {
+     name:string
+     age:number
+   }
+
+  class ResA {
+    @link({ arrayOf:Item1 })
+    items:Item1[]
+  }
+
+  class ResB extends ResA {
+    @link({ arrayOf:Item2 })
+    items:Item2[]
+  }
+
+  const data = {
+    "/res-a/pippo":{
+      items:["/item/1", "/item/2"],
+    },
+    "/res-a/pluto":{
+      items:["/item/3", "/item/4"],
+    },
+    "/item/1":{
+      name:"1"
+    },
+    "/item/2":{
+      name:"2"
+    },
+    "/item/3":{
+      name:"3",
+      age:3
+    },
+    "/item/4":{
+      name:"4",
+      age:4
+    }
+  }
+
+  export function test1() {
+    const opts = testOpts(data)
+    return fetch(ResA, opts).from("/res-a/pippo").then(resa => {
+      assert( resa.items[0].name === "1" )
+      assert( resa.items[1].name === "2" )
+    })
+  }
+
+  export function test2() {
+    const opts = testOpts(data)
+    return fetch(ResB, opts).from("/res-a/pluto").then(resa => {
+      assert( resa.items[0].name === "3" )
+      assert( resa.items[0].age === 3 )
+      assert( resa.items[1].name === "4" )
+      assert( resa.items[1].age === 4 )
+    })
+  }
 }
