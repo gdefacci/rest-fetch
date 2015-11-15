@@ -28,20 +28,20 @@ interface Context {
   promisesToWait: Promise<any>[]
 }
 
-function createMappingTypeRetriever(typ:MappingType, opts?:FetchOpts):MappingTypeRetriever {
-  return new MappingTypeRetriever(typ, createContext(opts))
+function createResourceRetriever(typ:MappingType, opts?:FetchOpts):ResourceRetrieverImpl {
+  return new ResourceRetrieverImpl(typ, createContext(opts))
 }
 
 export function fetch<T>(typ:JsConstructor<T>, opts?:FetchOpts):ResourceRetriever<T> {
-  return createMappingTypeRetriever(typ, opts)
+  return createResourceRetriever(typ, opts)
 }
 
 export function fetchArray<T>(typ:JsConstructor<T>, opts?:FetchOpts):ArrayResourceRetriever<T[]> {
-  return createMappingTypeRetriever({ arrayOf:typ }, opts)
+  return createResourceRetriever({ arrayOf:typ }, opts)
 }
 
 export function fetchChoose(ch:Selector, opts?:FetchOpts):ResourceRetriever<any> {
-  return createMappingTypeRetriever(ch, opts)
+  return createResourceRetriever(ch, opts)
 }
 
 function createContext(opts?: FetchOpts):Context {
@@ -60,7 +60,7 @@ function objectFetcherImpl<T>(context:Context) {
   }
 }
 
-class MappingTypeRetriever implements ResourceRetriever<any> {
+class ResourceRetrieverImpl implements ResourceRetriever<any> {
   objectFetcher:() => ObjectFetcher
   cnv:() => InternalConversionTo<any>
   isArrayMappingType:() => boolean
@@ -81,7 +81,7 @@ class MappingTypeRetriever implements ResourceRetriever<any> {
     if (this.isArrayMappingType()) {
       return this.cnv()(wsos, this.objectFetcher(), undefined).then(v => this.waitPendingPromisesAndReturn(v))
     } else {
-      return new MappingTypeRetriever({arrayOf:this.typ}, this.context).fromArray(wsos)
+      return new ResourceRetrieverImpl({arrayOf:this.typ}, this.context).fromArray(wsos)
     }
   }
   from(url:string, req?: RequestInit):Promise<any> {
@@ -90,15 +90,15 @@ class MappingTypeRetriever implements ResourceRetriever<any> {
     } else {
       const rq = req !== undefined ? new Request(url, req) : this.context.requestFactory(url);
       let res:any = undefined
-      return fetchLinkMappingType(url, this.context,  this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
+      return fetchLink(url, this.context,  this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
     }
   }
   fromUrls(urls:string[]):Promise<any> {
     if (this.isArrayMappingType()) {
       let res = undefined
-      return fetchLinkMappingType(urls, this.context, this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
+      return fetchLink(urls, this.context, this.typeExpr(), (v) => res = v, undefined).then(v => this.waitPendingPromisesAndReturn(res))
     } else {
-      return new MappingTypeRetriever({arrayOf:this.typ}, this.context).fromUrls(urls)
+      return new ResourceRetrieverImpl({arrayOf:this.typ}, this.context).fromUrls(urls)
     }
   }
 }
@@ -117,21 +117,15 @@ interface CallbackFetcher<T> {
   fetch(req: Request, callback: (v: T) => void): Promise<any>
 }
 
-function log(msg:() => string) {
-  //console.log(msg())
-}
-
 function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any, parentUrl?:string):Promise<T> {
 
-  log( () =>`fetching properties of ${typ.name} from ${JSON.stringify(wsobj, undefined, "")}`)
-
-  const links: JsMap<(Link | Converter)[]> =  getLinksMeta(typ).getOrElse( () => { return {} }) // || {};
+  const links: JsMap<(Link | Converter)[]> =  getLinksMeta(typ).getOrElse( () => { return {} })
   const r = new typ()
   const mergedKeys = Object.keys(JsMap.merge<any>([wsobj, links]))
   const promises: Promise<any>[] = mergedKeys.map(k => {
     const v = wsobj[k]
 
-    if (v === undefined || v === null) {
+    if (isNull(v)) {
       const lnks = links[k]
 
       const proms = lnks.map( linkOrCnv => {
@@ -181,7 +175,7 @@ function fetchUrl(url:string, context:Context):Promise<any> {
   return httpFetch(context.requestFactory(url), context.httpCache, context.responseReader)
 }
 
-function fetchLinkMappingType(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
+function fetchLink(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
   const expectingArrayUrl = lazy(() => Promise.reject(`expecting an array but got ${url}`))
   const expectingObjectUrl = lazy(() => Promise.reject(`expecting an string but got ${url}`))
 
@@ -208,7 +202,7 @@ function fetchLinkMappingType(url:string | string[], context:Context, jsType:Ext
       } else {
         const res:any[] = []
         const proms = url.map( (u, idx) => {
-          const p1 = fetchLinkMappingType(u, context, arr.value, a => { res[idx] = a }, propUrl)
+          const p1 = fetchLink(u, context, arr.value, a => { res[idx] = a }, propUrl)
           return p1.then( i => Promise.resolve(i), err => Promise.reject(`error at index ${idx}, error:${err.message}`) )
         })
         return Promise.all( proms ).then( u => callback(res) )
@@ -219,7 +213,7 @@ function fetchLinkMappingType(url:string | string[], context:Context, jsType:Ext
         callback(Option.none())
         return Promise.resolve<void>()
       } else {
-        return fetchLinkMappingType(url, context, opt.value, a => callback(Option.some(a)), propUrl)
+        return fetchLink(url, context, opt.value, a => callback(Option.some(a)), propUrl)
       }
     },
     (choose) => {
@@ -227,7 +221,7 @@ function fetchLinkMappingType(url:string | string[], context:Context, jsType:Ext
         return fetchUrl(url, context).then( wso => {
           return choose(wso).fold(
             () => Promise.reject("no choice"),
-            (typ) => fetchLinkMappingType(url, context, typ, callback, propUrl)
+            (typ) => fetchLink(url, context, typ, callback, propUrl)
           )
         })
       } else
@@ -246,7 +240,7 @@ function fetchProperty(context: Context, typeName:string, propertyName:string, p
   if (l instanceof Link) {
 
     if ((typeof propValue === "string") || Array.isArray(propValue)) {
-      res = fetchLinkMappingType(propValue, context, l.resultType, callback, parentUrl).then( i => Promise.resolve(i), err => {
+      res = fetchLink(propValue, context, l.resultType, callback, parentUrl).then( i => Promise.resolve(i), err => {
       const msg = `error fetching property  ${propertyName} of ${typeName} as link: ${err}`
       return Promise.reject(msg)
     })
@@ -267,12 +261,6 @@ function fetchProperty(context: Context, typeName:string, propertyName:string, p
   return res;
 }
 
-let count = 0
-function counter() {
-  count += 1
-  return count;
-}
-
 function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, context: Context, callback:(a:any) => void):Promise<void>  {
   function storeCache<T>(url: string, cache: ObjectsCache, typ:TypeExpr, p: Promise<T>): Promise<any> {
     cache.store(url, typ, p)
@@ -280,30 +268,11 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
   }
 
   return context.cache.get(url, typ).fold(
-    () => {
-
-      const idx = counter()
-      const prefix = `${idx}          `
-      log( () =>`${prefix} storing in cache ${typ.description} ${url}`)
-
-      const f1 = f().then( r => {
-        log( () =>`${prefix} stored in cache ${typ.description} ${url}`)
-        return r;
-      })
-
-      return storeCache(url, context.cache, typ, f1)
-
-    },
+    () => storeCache(url, context.cache, typ, f()),
     (cacheValue) => {
-
-      const idx = counter()
-      const prefix = `${idx}          `
-      log( () =>`${prefix} waiting for cache ${typ.description} ${url}`)
 
       context.promisesToWait.push(cacheValue.then(v => {
         callback(v)
-
-        log( () =>`${prefix} waited completed ${typ.description} ${url}`)
         return v;
       }))
 
@@ -313,7 +282,7 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
 }
 
 function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetcher<T> {
-  const linksMeta = typ && getLinksMeta(typ) //.getOrElse(() => undefined);
+  const linksMeta = typ && getLinksMeta(typ)
   const typExpr = TypeExpr.fromMappingType(typ)
   return {
     fetch: (req: Request, callback: (v: T) => void):Promise<any> => {
@@ -331,10 +300,6 @@ function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetc
             return u;
           })
         )
-      }, err => {
-        console.log("Error")
-        console.log(err)
-        return Promise.reject(err)
       })
 
       return withObjectCache(req.url, typExpr, prom, context, callback)
@@ -342,7 +307,3 @@ function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetc
     }
   }
 }
-
-
-
-

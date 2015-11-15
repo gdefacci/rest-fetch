@@ -4,17 +4,6 @@ import {lazy, Arrays, Option, JsMap, isNull} from "flib"
 export class Selector implements Selector {
   constructor(public convert:(a:any) => Option<SelectorMappingType>, public description?:string) {
   }
-  /*
-  or(cnv:Selector, description?:string):Selector {
-    const self = this
-    return new Selector( a => {
-      return self.convert(a).fold<Option<SelectorMappingType<any>>>(
-        () => cnv.convert(a),
-        (v) => Option.some(v)
-      )
-    }, description)
-  }
-  */
 }
 
 export module Selector {
