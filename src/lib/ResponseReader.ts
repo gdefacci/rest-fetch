@@ -6,7 +6,7 @@ function parseJson(txt:string):Promise<any> {
   try {
     return Promise.resolve(JSON.parse(txt))
   } catch (e) {
-    return Promise.reject(`Error parsing json ${e.message}`)
+    return Promise.reject(new Error(`Error parsing json ${e.message} json:\n${txt}`))
   }
 }
 
@@ -23,7 +23,7 @@ export const jsonResponseReader:ResponseReader = (resp:Response, req:Request):Pr
   if (statusOk(resp)) {
     return resp.text().then(parseJson)
   } else {
-    return Promise.reject(`${reqDesc(req)} return status : ${resp.status}`)
+    return Promise.reject(new Error(`${reqDesc(req)} return status : ${resp.status}`))
   }
 }
 

@@ -9,7 +9,7 @@ export type InternalConversionTo<T> = (a:any, objectFetcher:ObjectFetcher, paren
 
 function failedConversion(msg:string):InternalConversionTo<any> {
   return ():Promise<any>  =>  {
-    return Promise.reject(msg)
+    return Promise.reject(new Error(msg))
   }
 }
 
@@ -24,7 +24,7 @@ export const jsTypeToInternalConversion:(topts:MappingType) => InternalConversio
     (arr) => {
       const itmCnv = jsTypeToInternalConversion(arr.arrayOf)
       return (a:any, objectFetcher:ObjectFetcher, parentUrl:Option<string>):Promise<any[]>  => {
-        if (!Array.isArray(a)) return Promise.reject("invalid array ${a}")
+        if (!Array.isArray(a)) return Promise.reject(new Error("invalid array ${a}"))
         else return Promise.all(a.map(i => itmCnv(i, objectFetcher, parentUrl) ))
       }
     },

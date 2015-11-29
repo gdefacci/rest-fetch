@@ -18,6 +18,10 @@ export function allTests():Promise<any> {
     test2.Test6.test1(),
     test2.Test6.test2(),
     test2.Test7.test1(),
+    test2.Test8.test1(),
+    test2.Test8.test2(),
+    test2.Test8.test3(),
+    test2.Test8.test4(),
     EntriesMapTest.test1(),
     ErrorTest1.allErrorTests()
   ])

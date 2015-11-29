@@ -340,8 +340,76 @@ export module Test7 {
     const opts = testOpts(data)
     return fetch(Res1, opts).from("/res-a/pippo").then(resa => {
       fail("expecting a failure")
-    }, (err:string) => {
-      assert(err.indexOf("1 is not a string") > -1)
+    }, (err:Error) => {
+      assert(err.message.indexOf("1 is not a string") > -1)
     })
   }
 }
+
+
+export module Test8 {
+
+  class Pippo {
+    name:string
+  }
+
+  class Res1 {
+    @convert(Pippo)
+    pippo:string
+  }
+
+  class Res2 {
+    @convert({ optionOf:Pippo })
+    pippo:Option<Pippo>
+  }
+
+  class Res3 {
+    @link(Pippo)
+    pippo:string
+  }
+
+  class Res4 {
+    @link({ optionOf:Pippo })
+    pippo:Option<Pippo>
+  }
+
+
+  const data = {
+    "/res-a/res1":{
+    }
+  }
+
+  export function test1() {
+    const opts = testOpts(data)
+    return fetch(Res1, opts).from("/res-a/res1").then(resa => {
+      fail("expecting a failure")
+    }, (err:Error) => {
+      assert(err.message.indexOf("property pippo of Res1 is undefined") > -1)
+    })
+  }
+
+  export function test2() {
+    const opts = testOpts(data)
+    return fetch(Res2, opts).from("/res-a/res1").then(resa => {
+      assert( resa.pippo.isEmpty() )
+    })
+  }
+
+  export function test3() {
+    const opts = testOpts(data)
+    return fetch(Res3, opts).from("/res-a/res1").then(resa => {
+      fail("expecting a failure")
+    }, (err:Error) => {
+      assert(err.message.indexOf("property pippo of Res3 is undefined") > -1)
+    })
+  }
+
+  export function test4() {
+    const opts = testOpts(data)
+    return fetch(Res4, opts).from("/res-a/res1").then(resa => {
+      assert( resa.pippo.isEmpty() )
+    })
+  }
+}
+
+

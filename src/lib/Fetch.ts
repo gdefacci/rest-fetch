@@ -86,7 +86,7 @@ class ResourceRetrieverImpl implements ResourceRetriever<any> {
   }
   from(url:string, req?: RequestInit):Promise<any> {
     if (this.isArrayMappingType()) {
-      return Promise.reject(`trying to get an ArrayMappingType from ${url}`)
+      return Promise.reject(new Error(`trying to get an ArrayMappingType from ${url}`))
     } else {
       const rq = req !== undefined ? new Request(url, req) : this.context.requestFactory(url);
       let res:any = undefined
@@ -121,17 +121,20 @@ function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any,
 
   const links: JsMap<(Link | Converter)[]> =  getLinksMeta(typ).getOrElse( () => { return {} })
   const r = new typ()
+
   const mergedKeys = Object.keys(JsMap.merge<any>([wsobj, links]))
   const promises: Promise<any>[] = mergedKeys.map(k => {
     const v = wsobj[k]
+    const lnks = links[k]
 
-    if (isNull(v)) {
-      const lnks = links[k]
+    if (isNull(v) && !isNull(lnks)) {
 
       const proms = lnks.map( linkOrCnv => {
         if (linkOrCnv instanceof Converter) {
 
-          return linkOrCnv.conversion(undefined, objectFetcherImpl(context), Option.option(parentUrl)).then( v =>
+          const errMessage = (err:Error) => `property ${k} of ${typ.name} is undefined, error: ${err.message}`
+
+          return trap(() => linkOrCnv.conversion(undefined, objectFetcherImpl(context), Option.option(parentUrl)), errMessage).then( v =>
             r[linkOrCnv.targetProperty] = v
           )
 
@@ -140,16 +143,17 @@ function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any,
           const isOption = linkOrCnv.resultType.kind === TypeExprKind.option || isOptionType(<any>linkOrCnv.resultType.value);
           if (isOption) {
             r[linkOrCnv.targetProperty] = Option.none()
+            return Promise.resolve()
+          } else {
+            return Promise.reject(new Error(`link property ${k} of ${typ.name} is undefined`))
           }
-          return Promise.resolve()
-
         }
       })
       return (proms.length === 0) ? Promise.resolve() : Promise.all(proms)
 
     } else {
 
-      return Option.option(links[k]).fold<Promise<any>>(
+      return Option.option(lnks).fold<Promise<any>>(
         () => {
           r[k] = v;
           return Promise.resolve()
@@ -167,8 +171,7 @@ function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any,
 
 
 function fetchObject<T>(url:string, context:Context, resultType:JsConstructor<T>, callback:(a:T) => void):Promise<void> {
-  if (isNull(resultType)) return Promise.reject(`undefined resultType`)
-  else return fetchInternal(context, resultType).fetch(context.requestFactory(url), callback)
+  return fetchInternal(context, resultType).fetch(context.requestFactory(url), callback)
 }
 
 function fetchUrl(url:string, context:Context):Promise<any> {
@@ -176,8 +179,8 @@ function fetchUrl(url:string, context:Context):Promise<any> {
 }
 
 function fetchLink(url:string | string[], context:Context, jsType:ExtTypeExpr, callback:(a:any) => void, propUrl:string):Promise<void> {
-  const expectingArrayUrl = lazy(() => Promise.reject(`expecting an array but got ${url}`))
-  const expectingObjectUrl = lazy(() => Promise.reject(`expecting an string but got ${url}`))
+  const expectingArrayUrl = lazy(() => Promise.reject(new Error(`expecting an array but got ${url}`)))
+  const expectingObjectUrl = lazy(() => Promise.reject(new Error(`expecting an string but got ${url}`)))
 
   return TypeExpr.foldExt<Promise<void>>(
     (resultType) => typeof url === "string" ? fetchObject(url, context, resultType, callback) : expectingObjectUrl(),
@@ -203,7 +206,7 @@ function fetchLink(url:string | string[], context:Context, jsType:ExtTypeExpr, c
         const res:any[] = []
         const proms = url.map( (u, idx) => {
           const p1 = fetchLink(u, context, arr.value, a => { res[idx] = a }, propUrl)
-          return p1.then( i => Promise.resolve(i), err => Promise.reject(`error at index ${idx}, error:${err.message}`) )
+          return p1.then( i => Promise.resolve(i), err => Promise.reject(new Error(`error at index ${idx}, error:${err.message}`) ))
         })
         return Promise.all( proms ).then( u => callback(res) )
       }
@@ -220,7 +223,7 @@ function fetchLink(url:string | string[], context:Context, jsType:ExtTypeExpr, c
       if (typeof url === "string" ) {
         return fetchUrl(url, context).then( wso => {
           return choose(wso).fold(
-            () => Promise.reject("no choice"),
+            () => Promise.reject(new Error(`no choice found for ${wso}`)),
             (typ) => fetchLink(url, context, typ, callback, propUrl)
           )
         })
@@ -234,18 +237,18 @@ function fetchLink(url:string | string[], context:Context, jsType:ExtTypeExpr, c
   )(jsType)
 }
 
-
 function fetchProperty(context: Context, typeName:string, propertyName:string, propValue:any, parentUrl:string, l: Link | Converter, callback: (v: any) => void):Promise<void> {
   let res:Promise<any>
   if (l instanceof Link) {
 
     if ((typeof propValue === "string") || Array.isArray(propValue)) {
       res = fetchLink(propValue, context, l.resultType, callback, parentUrl).then( i => Promise.resolve(i), err => {
-      const msg = `error fetching property  ${propertyName} of ${typeName} as link: ${err}`
-      return Promise.reject(msg)
+
+      const msg = `error fetching property  ${propertyName} of ${typeName} as link: ${err.message}`
+      return Promise.reject(new Error(msg))
     })
     } else {
-      res = Promise.reject(`error fetching property  ${propertyName} of ${typeName} expecting a link got ${propValue}`)
+      res = Promise.reject(new Error(`error fetching property  ${propertyName} of ${typeName} expecting a link got ${propValue}`))
     }
 
   } else if (l instanceof Converter) {
@@ -254,8 +257,9 @@ function fetchProperty(context: Context, typeName:string, propertyName:string, p
       callback(i);
       return Promise.resolve(i)
     }, err => {
-      const msg = `error applying conversion of property ${propertyName} of ${typeName}: ${err}`
-      return Promise.reject(msg)
+
+      const msg = `error applying conversion of property ${propertyName} of ${typeName}: ${err.message}`
+      return Promise.reject(new Error(msg))
     })
   }
   return res;
@@ -282,6 +286,9 @@ function withObjectCache(url: string, typ:TypeExpr, f:() => Promise<any>, contex
 }
 
 function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetcher<T> {
+
+  if (isNull(typ)) throw new Error(`fetchInternal: undefined type`)
+
   const linksMeta = typ && getLinksMeta(typ)
   const typExpr = TypeExpr.fromMappingType(typ)
   return {
