@@ -2,7 +2,7 @@
   "name": "rest-fetch",
   "description": "a library to fetch graph of rest resources",
   "license": "(MIT OR Apache-2.0)",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "index.js",
   "files": [
     "*.js",
