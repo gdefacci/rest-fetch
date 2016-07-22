@@ -20,18 +20,18 @@
   "devDependencies": {
     "rimraf": "2.5.2",
     "source-map-loader": "^0.1.5",
-    "ts-loader": "^0.8.1",
+    "ts-loader": "^0.8.2",
     "jasmine-node": "^1.14.5",
 
     "jasmine": "^2.4.1",
-    "typescript": "1.8.7"
+    "typescript": "1.8.10"
   },
   "dependencies": {
-    "es6-promise": "^3.1.2",
+    "es6-promise": "^3.2.1",
     "jasmine": "^2.4.1",
     "reflect-metadata": "0.1.3",
-    "whatwg-fetch": "0.11.0",
-    "flib": "file:../flib"
+    "whatwg-fetch": "1.0.0",
+    "flib": "0.1.1"
   },
   "scripts": {
     "clean": "rimraf index.js* index.d.ts test1.browser.js* lib test",
@@ -42,6 +42,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gdefacci/nrest-fetch.git"
+    "url": "https://github.com/gdefacci/rest-fetch.git"
   }
 }
