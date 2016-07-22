@@ -15,8 +15,6 @@ export class Link {
 }
 
 function getMappingType(typ:MappingType | PropertyHolder, propType:JsConstructor<any>, errorPrefix:() => string): TypeExpr {
-  const typIsNull = isNull(typ)
-
   const propTypeIsArray  = isArrayType(propType)
   const typIsArrayMappingType = MappingType.isArrayMappingType(typ)
   if (propTypeIsArray && !typIsArrayMappingType) throw new Error(`${errorPrefix()}: Array property with undefined 'arrayOf' property`)

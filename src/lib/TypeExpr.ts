@@ -93,8 +93,16 @@ export module TypeExpr {
     return new TypeExpr(TypeExprKind.constructorFunction, "", ct)
   }
 
+  export function fromConstructorFunction<T>(typ:JsConstructor<T>) {
+    return new TypeExpr(TypeExprKind.constructorFunction, "", typ);
+  }
+
+  export function fromSelector(typ:Selector) {
+    return new TypeExpr(TypeExprKind.choice, "", typ)
+  }
+
   export const fromMappingType:(a:MappingType) => TypeExpr = MappingType.fold(
-    (ct) => new TypeExpr(TypeExprKind.constructorFunction, "", ct),
+    (ct) =>  fromConstructorFunction(ct), // new TypeExpr(TypeExprKind.constructorFunction, "", ct),
     (cnv) => new TypeExpr(TypeExprKind.simpleConverter, "", cnv),
     (arr) => {
       const itmTypeExpr = fromMappingType(arr.arrayOf)
@@ -104,7 +112,7 @@ export module TypeExpr {
       const itmTypeExpr = fromMappingType(opt.optionOf)
       return new TypeExpr(TypeExprKind.option, `o${itmTypeExpr.folding}`, itmTypeExpr.leaf)
     },
-    (chs) => new TypeExpr(TypeExprKind.choice, "", chs),
+    (chs) => fromSelector(chs), // new TypeExpr(TypeExprKind.choice, "", chs),
     (gpu) => new TypeExpr(TypeExprKind.getPropertyUrl, "", gpu)
   )
 

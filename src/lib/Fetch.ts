@@ -36,9 +36,11 @@ export function fetch<T>(typ:JsConstructor<T>, opts?:FetchOpts):ResourceRetrieve
   return createResourceRetriever(typ, opts)
 }
 
+/*
 export function fetchArray<T>(typ:JsConstructor<T>, opts?:FetchOpts):ArrayResourceRetriever<T[]> {
   return createResourceRetriever({ arrayOf:typ }, opts)
 }
+*/
 
 export function fetchChoose(ch:Selector, opts?:FetchOpts):ResourceRetriever<any> {
   return createResourceRetriever(ch, opts)
@@ -117,6 +119,18 @@ interface CallbackFetcher<T> {
   fetch(req: Request, callback: (v: T) => void): Promise<any>
 }
 
+function isWriteable(obj:any, prop:string | symbol):boolean {
+  const d = Object.getOwnPropertyDescriptor(obj, <any>prop);
+  return d === undefined || d.writable === true
+}
+
+function setProperty(obj:any, prop:string | symbol, v:any):void {
+  try {
+    obj[prop] = v
+  } catch(e) {
+  }
+}
+
 function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any, parentUrl?:string):Promise<T> {
 
   const links: JsMap<(Link | Converter)[]> =  getLinksMeta(typ).getOrElse( () => { return {} })
@@ -129,24 +143,28 @@ function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any,
 
     if (isNull(v) && !isNull(lnks)) {
 
-      const proms = lnks.map( linkOrCnv => {
-        if (linkOrCnv instanceof Converter) {
+      const proms:Promise<any>[] = lnks.map( linkOrCnv => {
+        if (isWriteable(r, linkOrCnv.targetProperty)) {
+          if (linkOrCnv instanceof Converter) {
 
-          const errMessage = (err:Error) => `property ${k} of ${typ.name} is undefined, error: ${err.message}`
+            const errMessage = (err:Error) => `property ${k} of ${typ.name} is undefined, error: ${err.message}`
 
-          return trap(() => linkOrCnv.conversion(undefined, objectFetcherImpl(context), Option.option(parentUrl)), errMessage).then( v =>
-            r[linkOrCnv.targetProperty] = v
-          )
+            return trap(() => linkOrCnv.conversion(undefined, objectFetcherImpl(context), Option.option(parentUrl)), errMessage).then( v =>
+              setProperty(r, linkOrCnv.targetProperty, v)
+            )
 
-        } else if (linkOrCnv instanceof Link) {
+          } else if (linkOrCnv instanceof Link) {
 
-          const isOption = linkOrCnv.resultType.kind === TypeExprKind.option || isOptionType(<any>linkOrCnv.resultType.value);
-          if (isOption) {
-            r[linkOrCnv.targetProperty] = Option.none()
-            return Promise.resolve()
-          } else {
-            return Promise.reject(new Error(`link property ${k} of ${typ.name} is undefined`))
+            const isOption = linkOrCnv.resultType.kind === TypeExprKind.option || isOptionType(<any>linkOrCnv.resultType.value);
+            if (isOption) {
+              setProperty(r, linkOrCnv.targetProperty, Option.none())
+              return Promise.resolve()
+            } else {
+              return Promise.reject(new Error(`link property ${k} of ${typ.name} is undefined`))
+            }
           }
+        } else {
+          return Promise.resolve()
         }
       })
       return (proms.length === 0) ? Promise.resolve() : Promise.all(proms)
@@ -155,11 +173,14 @@ function fetchProperties<T>(context: Context, typ: JsConstructor<T>, wsobj: any,
 
       return Option.option(lnks).fold<Promise<any>>(
         () => {
-          r[k] = v;
+          if (isWriteable(r,k)) setProperty(r, k, v);
           return Promise.resolve()
         },
         (lnks) => {
-          const proms:Promise<any>[] = lnks.map( l => fetchProperty(context, typ.name, k, v, parentUrl, l, v => { r[l.targetProperty] = v }) )
+          const proms:Promise<any>[] = lnks.map( l => {
+            if (isWriteable(r,k)) return fetchProperty(context, typ.name, k, v, parentUrl, l, v => { setProperty(r, l.targetProperty, v) })
+            else return Promise.resolve();
+          })
           return Promise.all(proms)
         }
       )
@@ -298,7 +319,9 @@ function fetchInternal<T>(context: Context, typ: JsConstructor<T>): CallbackFetc
         return linksMeta.fold<any>(
           () => {
             const r: T = new typ()
-            Object.keys(a).forEach(k => r[k] = a[k])
+            Object.keys(a).forEach( k => {
+              if (isWriteable(r,k)) setProperty(r, k, a[k])
+            })
             callback(r)
             return r;
           },

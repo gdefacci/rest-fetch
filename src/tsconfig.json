@@ -15,6 +15,10 @@
 
                 "../node_modules/flib/index.d.ts",
 
+                "lib/prop/Try.ts",
+                "lib/prop/Applicative.ts",
+                "lib/prop/Property.ts",
+
                 "lib/EntriesMap.ts",
                 "lib/Util.ts",
                 "lib/cache.ts",
