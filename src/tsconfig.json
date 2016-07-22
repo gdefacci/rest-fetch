@@ -1,53 +1,35 @@
 {
-	"compilerOptions": {
-                "module": "commonjs",
-                "target": "es5",
-                "moduleResolution": "node",
-                "declaration": true,
-                "sourceMap": true,
-                "emitDecoratorMetadata": true,
-                "experimentalDecorators":true
-	},
-	"files": [
-                "libs/es6-promise/es6-promise.d.ts",
-                "libs/reflect-metadata/reflect-metadata.d.ts",
-                "libs/whatwg-fetch/whatwg-fetch.d.ts",
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "moduleResolution": "node",
+        "declaration": true,
+        "sourceMap": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "suppressImplicitAnyIndexErrors": true
+    },
+    "files": [
+        "libs/es6-promise/es6-promise.d.ts",
+        "libs/reflect-metadata/reflect-metadata.d.ts",
+        "libs/whatwg-fetch/whatwg-fetch.d.ts",
+        "../node_modules/flib/index.d.ts",
 
-                "../node_modules/flib/index.d.ts",
+        "lib/Try.ts",
+        "lib/ObjectsCache.ts",
+        "lib/model.ts",
+        "lib/ObjectValueBuilder.ts",
+        "lib/annotations.ts",
+        "lib/ResourceFetch.ts",
+        "index.ts",
 
-                "lib/prop/Try.ts",
-                "lib/prop/Applicative.ts",
-                "lib/prop/Property.ts",
-
-                "lib/EntriesMap.ts",
-                "lib/Util.ts",
-                "lib/cache.ts",
-                "lib/RequestFactory.ts",
-                "lib/ResponseReader.ts",
-
-                "lib/SimpleConverter.ts",
-                "lib/Selector.ts",
-                "lib/types.ts",
-                "lib/TypeExpr.ts",
-                "lib/ObjectsCache.ts",
-
-                "lib/Meta.ts",
-                "lib/Retriever.ts",
-                "lib/Converter.ts",
-
-                "lib/InternalConversion.ts",
-
-                "lib/Link.ts",
-                "lib/Fetch.ts",
-
-                "index.ts",
-
-                "test/TestUtil.ts",
-                "test/MappingTypeTest.ts",
-                "test/test1.ts",
-                "test/test2.ts",
-                "test/EntriesMapTest.ts",
-                "test/error1.ts",
-                "test/All.ts"
-	]
+        // tests
+        "libs/jasmine/jasmine.d.ts",
+        "test/TestHelper.ts",
+        "test/JsonInterpreter_test.spec.ts",
+        "test/annotations_test.spec.ts",
+        "test/annotations_errors_test.spec.ts"
+    ]
 }

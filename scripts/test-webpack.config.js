@@ -2,7 +2,11 @@ var path = require("path");
 
 module.exports = {
   context: path.join(__dirname, "../src"),
-  entry: './test/All.ts',
+  entry: [
+    './test/JsonInterpreter_test.spec.ts',
+    './test/annotations_test.spec.ts',
+    './test/annotations_errors_test.spec.ts'
+  ],
   displayErrorDetails: true,
   debug: true,
   output: {
