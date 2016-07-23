@@ -34,7 +34,7 @@ class InterpreterResult {
 class Context {
   constructor(
     public extraPropertiesStrategy:ExtraPropertiesStrategy,
-    public httpGet: (url: string) => Promise<Option<any>>,
+    public httpFetch: (url: string) => Promise<Option<any>>,
     public objectsCache: ObjectsCache<JsConstructor<any>, Promise<any>>,
     public setValue: (a: any) => void,
     public url: Option<string>,
@@ -43,26 +43,29 @@ class Context {
   }
 
   withUrl(url:string) {
-    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, this.setValue, Option.some(url), this.url)
+    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, this.setValue, Option.some(url), this.url)
   }
   withoutUrl() {
-    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, this.setValue, Option.none<string>(), this.url)
+    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, this.setValue, Option.none<string>(), this.url)
   }
   withSetValue(setValue:(a:any) => void) {
-    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, setValue, this.url, this.parentUrl)
+    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, setValue, this.url, this.parentUrl)
   }
 }
 
-
 export class ResourceFetch {
-  constructor(private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy, private httpCacheFactory:() => (url:string) => Promise<Option<any>>) {
+  constructor(private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy, private httpFetchFactory:() => (url:string) => Promise<Option<any>>) {
   }
   fetchResource<T>(url:string, mapping:() => (ObjectValue<T> | ChoiceValue<T>)):Promise<T> {
-    const interpreter = new JsonIntepreter()
-    const httpGet = this.httpCacheFactory()
+    const httpFetch = this.httpFetchFactory()
     let result:T= null
-    const ctx = new Context(this.propertiesWithoutMappingStrategy, httpGet, newObjectsCache<JsConstructor<any>, Promise<any>>(), v => result = v, Option.none<string>(),Option.none<string>())
-    const ires = interpreter.interpret(ctx, Value.link(mapping)(), url)
+    const ctx = new Context(this.propertiesWithoutMappingStrategy,
+      httpFetch,
+      newObjectsCache<JsConstructor<any>, Promise<any>>(),
+      v => result = v,
+      Option.none<string>(),Option.none<string>() )
+
+    const ires = JsonIntepreter.instance.interpret(ctx, Value.link(mapping)(), url)
 
     return ires.then( ires => ires.all().then( v => result ) )
   }
@@ -87,6 +90,8 @@ function simpleValue<T,T1>(json:any, typename:string, f:(v:T) => T1, setValue:(a
 
 class JsonIntepreter {
 
+  static instance = new JsonIntepreter()
+
   interpret<T>(context:Context, mapping: Value<T>, json: any): Promise<InterpreterResult> {
     return mapping.fold<Promise<InterpreterResult>>(
       <T1>(rawValue:RawValue<any,T1>) => {
@@ -103,7 +108,7 @@ class JsonIntepreter {
       (item, notFoundHandler) => {
         if (typeof json === "string") {
           const url = json
-          return context.httpGet(url).then( (json:Option<any>) =>
+          return context.httpFetch(url).then( (json:Option<any>) =>
             json.fold(
               () => {
                 context.setValue(notFoundHandler(url))

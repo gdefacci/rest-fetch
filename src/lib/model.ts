@@ -22,7 +22,7 @@ export interface RawValueNT<O> {
 export abstract class Value<T> {
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
@@ -61,7 +61,7 @@ export class RawValue<I, T> {
   static boolean = new RawValue<boolean,boolean>(SimpleValueKind.booleanKind, i => i)
   static number = new RawValue<number,number>(SimpleValueKind.numberKind, i => i)
   static string = new RawValue<string,string>(SimpleValueKind.textKind, i => i)
-  static getUrl = new RawValue<Option<String>,Option<String>>(SimpleValueKind.getUrlKind, i => i)
+  static getUrl = new RawValue<Option<string>,Option<string>>(SimpleValueKind.getUrlKind, i => i)
 
   constructor(public kind: SimpleValueKind, public f: (i: I) => T) {
   }
@@ -94,7 +94,7 @@ export class SimpleValue<I, T> extends Value<T> {
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
@@ -138,12 +138,12 @@ export class ArrayValue<T> extends Value<T[]> {
 
 
 export class LinkValue<T> extends Value<T> {
-  constructor(private item: () => ObjectValue<T> | ChoiceValue<T>, private notFoundHandler:(resourceName:String) => T) {
+  constructor(private item: () => ObjectValue<T> | ChoiceValue<T>, private notFoundHandler:(resourceName:string) => T) {
     super()
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
@@ -165,7 +165,7 @@ export class ObjectValue<T> extends Value<T> {
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
@@ -189,7 +189,7 @@ export class ChoiceValue<T> extends Value<T> {
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
@@ -206,11 +206,11 @@ export class ValuePredicate<T> {
 
 export module NotFoundHandler {
 
-  export function defaultTo<T>(defaultValue:T):(resourceName:String) => T{
+  export function defaultTo<T>(defaultValue:T):(resourceName:string) => T{
     return lazy(() => defaultValue)
   }
 
-  export function raiseNotFoundError<T>():(resourceName:String) => T{
+  export function raiseNotFoundError<T>():(resourceName:string) => T{
     return (resourceName) => fail<T>(`not found :${resourceName}`)
   }
 
@@ -234,7 +234,7 @@ export module Value {
     return () => new ArrayValue<T[]>(item)
   }
 
-  export function link<T>(item: () => ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:String) => T = NotFoundHandler.raiseNotFoundError<T>()) {
+  export function link<T>(item: () => ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T = NotFoundHandler.raiseNotFoundError<T>()) {
     return () => new LinkValue<T>(item, notFoundHandler)
   }
 

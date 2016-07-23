@@ -22,7 +22,10 @@
         "lib/model.ts",
         "lib/ObjectValueBuilder.ts",
         "lib/annotations.ts",
+        "lib/HttpFetch.ts",
         "lib/ResourceFetch.ts",
+
+        "lib/FetchResource.ts",
         "index.ts",
 
         // tests
@@ -30,6 +33,9 @@
         "test/TestHelper.ts",
         "test/JsonInterpreter_test.spec.ts",
         "test/annotations_test.spec.ts",
-        "test/annotations_errors_test.spec.ts"
+        "test/annotations_errors_test.spec.ts",
+
+        // samples
+        "samples/ReadmeSample.ts"
     ]
 }
