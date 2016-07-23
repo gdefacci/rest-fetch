@@ -98,6 +98,21 @@ See [tests](src/test) for more examples
 
 It also works for cyclic/recursive structures.
 
+Build
+=====
+```
+npm run-script clean
+```
+remove artifacts produced by the build
+```
+npm install & npm test
+```
+launch the tests
+```
+npm runScript mkTest
+```
+create jasmine test browser bundle, that can be run on the browser
+
 Issues/Limitations
 ==================
 
