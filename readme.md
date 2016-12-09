@@ -1,4 +1,4 @@
-A annotations based typescript library, to fetch graph of objects, exposed as rest/HATEOAS resources. 
+A annotations based typescript library, to fetch graph of objects, exposed as rest/HATEOAS resources.
 
 tutorial
 ========
@@ -42,59 +42,69 @@ GET /persons/pippo/address
 
 and we want to map those resources to the typescript model:
 
-    interface City {
-      name:string
-    }
+```typescript
+interface City {
+  name:string
+}
 
-    interface Address {
-      street:string
-      city:City
-    }
+interface Address {
+  street:string
+  city:City
+}
 
-    interface Person {
-      name:string
-      friends:Person[]
-      address:Address
-    }
+interface Person {
+  name:string
+  friends:Person[]
+  address:Address
+}
+```
 
 We can achieve the result defining few classes:
 
-    import {link, fetch} from "rest-fetch"
+```typescript
+import { link, Lazy, convert, mapping } from "rest-fetch"
 
-    class CityImpl implements City {
-      name:string
-    }
+class CityImpl implements City {
+  name: string
+}
 
-    class AddressImpl implements Address {
-      street:string
-      
-      @link()
-      city:City
-    }
+class AddressImpl implements Address {
+  street: string
 
-    class PersonImpl implements Person {
-      name:string
-      
-      @link({ arrayOf:Person })
-      friends:Person[]
-      
-      @link()
-      address:Address
-    }
+  @link( mapping(CityImpl) )
+  city: City
+}
+
+class PersonImpl implements Person {
+  name: string
+
+  // must use Lazy, PersonImpl is not defined at this point
+  @convert(Lazy.arrayOf(() => PersonImpl))
+  friends: Person[]
+
+  @link( mapping(AddressImpl) )
+  address: Address
+}
+```
 
 And then:
 
-```
-const result:Promise<Person> = fetch(PersonImpl).from("/persons/pippo")  
+```typescript
+import { ResourceFetch, mapping } from "rest-fetch"
+
+const rf = new ResourceFetch()
+const result:Promise<Person> = rf.fetchResource("/persons/pippo", mapping(PersonImpl))
+
+result.then( r => console.log(r) )
 ```
 
 See [tests](src/test) for more examples
 
-It also works for cyclic/recursive structures.
+It works for cyclic/recursive structures.
 
 Issues/Limitations
 ==================
 
-- classes instantiation is done invoking the constructor with no arguments 
-- @link() and @convert() annotations can be specified only for properties of classes 
+- classes instantiation is done invoking the constructor with no arguments
+- @link() and @convert() annotations can be specified only for properties of classes
 - class declaration order matters, actually you can only reference a previously defined class in link, or convert annotations

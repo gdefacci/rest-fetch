@@ -1,6 +1,8 @@
 import {JsMap, Option, Arrays, isNull, Try} from "flib"
 import {ObjectsCache, newObjectsCache} from"./ObjectsCache"
+import {default as httpCacheFactory} from"./httpCacheFactory"
 import {JsConstructor, ObjectValue  , ChoiceValue  , Value, ValuePredicate, ExtraPropertiesStrategy, RawValue} from"./model"
+import * as HttpConfig from "./HttpConfig"
 
 function getJsonValue<T>(v: any, desc: string, predicate: (a: any) => boolean): Try<T> {
   if (isNull(v)) return Try.failure(new Error("null"))
@@ -52,9 +54,13 @@ class Context {
   }
 }
 
+function defaultHttpCacheFactory() {
+  return httpCacheFactory(HttpConfig.defaultRequestFactory, HttpConfig.jsonResponseReader)
+}
 
 export class ResourceFetch {
-  constructor(private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy, private httpCacheFactory:() => (url:string) => Promise<Option<any>>) {
+  constructor(  private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy = ExtraPropertiesStrategy.copy,
+                private httpCacheFactory:() => (url:string) => Promise<Option<any>> = defaultHttpCacheFactory()) {
   }
   fetchResource<T>(url:string, mapping:() => (ObjectValue<T> | ChoiceValue<T>)):Promise<T> {
     return this.fetchRun(url, Value.link(mapping)());
