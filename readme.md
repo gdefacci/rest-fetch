@@ -112,6 +112,6 @@ It works for cyclic/recursive structures.
 Issues/Limitations
 ==================
 
-- classes instantiation is done invoking the constructor with no arguments
+- class instantiation is done invoking the no-arg constructor
 - @link() and @convert() annotations can be specified only for properties of classes
 - class declaration order matters, actually you can only reference a previously defined class in link, or convert annotations
