@@ -6,7 +6,7 @@ export default class TestFetcher {
   public static promisesMap<V>(mp: JsMap<V>): (k: string) => Promise<Option<V>> {
     return (k: string) => {
       const v = mp[k];
-      if (v === undefined || v === null) throw new Error(`missing: ${k}`)
+      if (v === undefined || v === null) return Promise.reject(new Error(`missing: ${k}`))
       else return Promise.resolve(new Option(v));
     };
   }

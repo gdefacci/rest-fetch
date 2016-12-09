@@ -213,7 +213,9 @@ export module NotFoundHandler {
   }
 
   export function raiseNotFoundError<T>():(resourceName:string) => T{
-    return (resourceName) => fail<T>(`not found :${resourceName}`)
+    return (resourceName) => {
+      throw new Error(`not found :${resourceName}`)
+    }
   }
 
 }

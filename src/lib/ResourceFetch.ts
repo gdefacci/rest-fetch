@@ -122,8 +122,12 @@ class JsonIntepreter {
           return context.httpGet(url).then( (json:Option<any>) =>
             json.fold(
               () => {
-                context.setValue(notFoundHandler(url))
-                return Promise.resolve(InterpreterResult.empty)
+                try {
+                  context.setValue(notFoundHandler(url))
+                  return Promise.resolve(InterpreterResult.empty)
+                } catch (e) {
+                  return Promise.reject(e)
+                }
               },
               json => this.interpret(context.withUrl(url), item, json))
           );

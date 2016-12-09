@@ -79,7 +79,7 @@ class PersonImpl implements Person {
   name: string
 
   // must use Lazy, PersonImpl is not defined at this point
-  @convert(Lazy.arrayOf(() => PersonImpl))
+  @convert(Lazy.arrayOfLinks(() => PersonImpl))
   friends: Person[]
 
   @link( mapping(AddressImpl) )
@@ -93,9 +93,16 @@ And then:
 import { ResourceFetch, mapping } from "rest-fetch"
 
 const rf = new ResourceFetch()
-const result:Promise<Person> = rf.fetchResource("/persons/pippo", mapping(PersonImpl))
+const result: Promise<Person> = rf.fetchResource("/persons/pippo", mapping(PersonImpl))
 
-result.then( r => console.log(r) )
+result.then(r => {
+  expect(r.name).toBe("pippo")
+  expect(r.friends.length).toBe(1)
+  expect(r.friends[0].name).toBe("minni")
+  // works with cyclic data strutures !
+  expect(r.friends[0].friends[0]).toBe(r)
+  done()
+}, err => console.log(err))
 ```
 
 See [tests](src/test) for more examples
