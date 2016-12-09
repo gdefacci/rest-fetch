@@ -1,7 +1,6 @@
-import {JsConstructor, ArrayValue, ChoiceValue, ObjectValue, OptionValue, SimpleValue, Value, ExtraPropertiesStrategy, foldCase} from "./model"
+import {JsConstructor, ArrayValue, ChoiceValue, ObjectValue, OptionValue, SimpleValue, Value, foldCase} from "./model"
 import {Mappings, MappingProperties} from "./Mappings"
 import {lazy, Option} from "flib"
-import {newObjectsCache} from "./ObjectsCache"
 
 function assert(msg: () => string, b: boolean) {
   if (!b) throw new Error(msg())
@@ -45,9 +44,8 @@ export function link(mapping?: () => ObjectValue<any> | OptionValue<any> | Choic
     const container = target.constructor
     const propType = Reflect.getMetadata("design:type", target, targetProperty)
     const errPrefix = () => `Property '${targetProperty}' of ${container.name}`
-    const isNullMapping = (mapping === null || mapping === undefined)
 
-    if (isNullMapping) {
+    if (mapping === null || mapping === undefined) {
       const cantInferType = () => `${errPrefix()}: cant infer link type`
       const errMsg = () => `${errPrefix()}: expecting a link got ${propType.name}`
 
@@ -58,7 +56,7 @@ export function link(mapping?: () => ObjectValue<any> | OptionValue<any> | Choic
       assert(cantInferType, propType !== Option)
     }
 
-    const mapping1 = isNullMapping ? lazy(() => Mappings.instance.getMapping(propType)) : mapping;
+    const mapping1 = (mapping === null || mapping === undefined) ? lazy(() => Mappings.instance.getMapping(propType)) : mapping;
 
     Mappings.instance.addProperty(container, <any>targetProperty, sourceProperty || <any>targetProperty, () => {
       const mpng = mapping1()
@@ -80,9 +78,8 @@ export function convert(mapping?: () => ObjectValue<any> | OptionValue<any> | Ch
     const container = target.constructor
     const propType = Reflect.getMetadata("design:type", target, targetProperty)
     const errPrefix = () => `Property '${targetProperty}' of ${container.name}`
-    const isNullMapping = (mapping === null || mapping === undefined)
 
-    if (isNullMapping) {
+    if (mapping === null || mapping === undefined) {
       const cantInferType = () => `${errPrefix()}: cant infer type`
 
       if (propType === undefined || propType === null) throw new Error(cantInferType())
@@ -90,7 +87,7 @@ export function convert(mapping?: () => ObjectValue<any> | OptionValue<any> | Ch
       else if (propType === Array) throw new Error(cantInferType())
     }
 
-    const mapping1: () => Value<any> = isNullMapping ?
+    const mapping1: () => Value<any> = (mapping === null || mapping === undefined) ?
       () => {
         const mp1 = getMappingFromPropType(propType)
         checkConsistent(mp1, propType, errPrefix)

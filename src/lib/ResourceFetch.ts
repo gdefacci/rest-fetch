@@ -1,18 +1,17 @@
-import {JsMap, Option, Arrays, isNull} from "flib"
-import {Try, Success, Failure} from "./Try"
+import {JsMap, Option, Arrays, isNull, Try} from "flib"
 import {ObjectsCache, newObjectsCache} from"./ObjectsCache"
-import {JsConstructor, ObjectValue  , ChoiceValue  , Value, ValuePredicate, ExtraPropertiesStrategy, RawValue, RawValueNT} from"./model"
+import {JsConstructor, ObjectValue  , ChoiceValue  , Value, ValuePredicate, ExtraPropertiesStrategy, RawValue} from"./model"
 
 function getJsonValue<T>(v: any, desc: string, predicate: (a: any) => boolean): Try<T> {
-  if (isNull(v)) return new Failure(new Error("null"))
-  else if (!predicate(v)) return new Failure(new Error(`${JSON.stringify(v)} is not $desc`))
-  else return new Success<T>(v)
+  if (isNull(v)) return Try.failure(new Error("null"))
+  else if (!predicate(v)) return Try.failure(new Error(`${JSON.stringify(v)} is not ${desc}`))
+  else return Try.success(v)
 }
 
 function getJsonProperty(json: any, name: string): Try<any> {
   return (json === undefined || typeof json !== "object") ?
-    new Failure(new Error(`error while reading Value ${name}, expecting an object got ${JSON.stringify(json)}`)) :
-    new Success(json[name])
+    Try.failure(new Error(`error while reading Value ${name}, expecting an object got ${JSON.stringify(json)}`)) :
+    Try.success(json[name])
 }
 
 class InterpreterResult {
@@ -34,7 +33,7 @@ class InterpreterResult {
 class Context {
   constructor(
     public extraPropertiesStrategy:ExtraPropertiesStrategy,
-    public httpFetch: (url: string) => Promise<Option<any>>,
+    public httpGet: (url: string) => Promise<Option<any>>,
     public objectsCache: ObjectsCache<JsConstructor<any>, Promise<any>>,
     public setValue: (a: any) => void,
     public url: Option<string>,
@@ -43,30 +42,32 @@ class Context {
   }
 
   withUrl(url:string) {
-    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, this.setValue, Option.some(url), this.url)
+    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, this.setValue, Option.some(url), this.url)
   }
   withoutUrl() {
-    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, this.setValue, Option.none<string>(), this.url)
+    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, this.setValue, Option.None, this.url)
   }
   withSetValue(setValue:(a:any) => void) {
-    return new Context(this.extraPropertiesStrategy, this.httpFetch, this.objectsCache, setValue, this.url, this.parentUrl)
+    return new Context(this.extraPropertiesStrategy, this.httpGet, this.objectsCache, setValue, this.url, this.parentUrl)
   }
 }
 
+
 export class ResourceFetch {
-  constructor(private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy, private httpFetchFactory:() => (url:string) => Promise<Option<any>>) {
+  constructor(private propertiesWithoutMappingStrategy:ExtraPropertiesStrategy, private httpCacheFactory:() => (url:string) => Promise<Option<any>>) {
   }
   fetchResource<T>(url:string, mapping:() => (ObjectValue<T> | ChoiceValue<T>)):Promise<T> {
-    const httpFetch = this.httpFetchFactory()
-    let result:T= null
-    const ctx = new Context(this.propertiesWithoutMappingStrategy,
-      httpFetch,
-      newObjectsCache<JsConstructor<any>, Promise<any>>(),
-      v => result = v,
-      Option.none<string>(),Option.none<string>() )
-
-    const ires = JsonIntepreter.instance.interpret(ctx, Value.link(mapping)(), url)
-
+    return this.fetchRun(url, Value.link(mapping)());
+  }
+  fetchObject<T>(obj:any, mapping:() => (ObjectValue<T> | ChoiceValue<T>)):Promise<T> {
+    return this.fetchRun(obj, mapping());
+  }
+  private fetchRun<T>(obj:any, mapping:Value<T>):Promise<T> {
+    const interpreter = new JsonIntepreter()
+    const httpGet = this.httpCacheFactory()
+    let result:T
+    const ctx = new Context(this.propertiesWithoutMappingStrategy, httpGet, newObjectsCache<JsConstructor<any>, Promise<any>>(), v => result = v, Option.None,Option.None)
+    const ires = interpreter.interpret(ctx, mapping, obj)
     return ires.then( ires => ires.all().then( v => result ) )
   }
 }
@@ -78,19 +79,23 @@ function isGetPropertyValue<T>(v:Value<T>) {
   return v.fold<boolean>( (item: RawValue<any, any>) => item.fold(no, no, no, yes), no, no, no, no, no);
 }
 
-function simpleValue<T,T1>(json:any, typename:string, f:(v:T) => T1, setValue:(a:any) => void) {
-  return getJsonValue<T>(json, typename, (a: any) => (typeof a === typename)).fold(
-    (err) => Promise.reject(err),
-    (v) => {
-      setValue(f(v))
-      return Promise.resolve(InterpreterResult.empty)
-    }
-  )
+function simpleValue<T,T1>(json:any, typename:string, f:(v:T) => T1, setValue:(a:any) => void):Promise<InterpreterResult> {
+  const tr:Try<T> = getJsonValue<T>(json, typename, (a: any) => (typeof a === typename))
+  return tr.fold<Promise<InterpreterResult>>( (err:Error) => Promise.reject(err), (v:T) => {
+    setValue(f(v))
+    return Promise.resolve<InterpreterResult>(InterpreterResult.empty)
+  })
+}
+
+function setPropertyValue(a:any, p:string, v:any) {
+  try {
+    a[p] = v
+  } catch(e) {
+    /** ignore readonly property errors */
+  }
 }
 
 class JsonIntepreter {
-
-  static instance = new JsonIntepreter()
 
   interpret<T>(context:Context, mapping: Value<T>, json: any): Promise<InterpreterResult> {
     return mapping.fold<Promise<InterpreterResult>>(
@@ -108,7 +113,7 @@ class JsonIntepreter {
       (item, notFoundHandler) => {
         if (typeof json === "string") {
           const url = json
-          return context.httpFetch(url).then( (json:Option<any>) =>
+          return context.httpGet(url).then( (json:Option<any>) =>
             json.fold(
               () => {
                 context.setValue(notFoundHandler(url))
@@ -126,6 +131,9 @@ class JsonIntepreter {
 
         return cachedObj.fold(
           () => {
+            if (!(typeof json === "object"))
+              return Promise.reject(new Error(`expecting an object got '${json}' (of type ${typeof json}) creating object ${jsConstr.name}`))
+
             const resObj = new jsConstr();
             const res = Promise.resolve(resObj)
 
@@ -138,8 +146,8 @@ class JsonIntepreter {
               const [sourceProperty, prop] = nameProp
               delete remainingJsonPropertiesSet[sourceProperty];
               return getJsonProperty(json, sourceProperty).fold(
-                err => Promise.reject(err),
-                (v) => this.interpret(context.withoutUrl().withSetValue(v => resObj[targetProperty] = v), prop, v)
+                (err:Error) => Promise.reject(err),
+                (v:any) => this.interpret(context.withoutUrl().withSetValue(v => setPropertyValue(resObj, targetProperty, v)), prop, v)
               )
             })
 
@@ -150,7 +158,7 @@ class JsonIntepreter {
                   return Promise.reject(new Error(`extra properties ${Object.keys(remainingJsonPropertiesSet)} creating object ${jsConstr.name}`))
 
               case ExtraPropertiesStrategy.copy:
-                JsMap.forEach(remainingJsonPropertiesSet, (k,v) => resObj[k] = json[k] )
+                JsMap.forEach(remainingJsonPropertiesSet, (k,v) => setPropertyValue(resObj,k, json[k]) )
               case ExtraPropertiesStrategy.discard:
               default:
                 const proms = Promise.all(Object.keys(promisesMap).map(k => promisesMap[k]))
@@ -167,9 +175,9 @@ class JsonIntepreter {
       },
       <T1>(item:Value<T1>) => {
 
-        const interpretItem = () => this.interpret(context.withSetValue(v => context.setValue(Option.option(v))), item, json)
+        const interpretItem = () => this.interpret(context.withSetValue(v => context.setValue(new Option(v))), item, json)
         const setNone = () => {
-          context.setValue(Option.none())
+          context.setValue(Option.None)
           return Promise.resolve( InterpreterResult.empty )
         }
 
@@ -199,9 +207,9 @@ class JsonIntepreter {
           return Promise.reject(new Error(`expecting an array got ${JSON.stringify(json)}`))
 
       },
-      (choices) => {
+      (description, choices) => {
         if (!isNull(json)) {
-          return this.findChoice(context, json, choices)
+          return this.findChoice(context, json, description, choices)
         } else {
           return Promise.reject(new Error("null"))
         }
@@ -209,16 +217,24 @@ class JsonIntepreter {
     )
   }
 
-  findChoice(context:Context, json:any, choices:ValuePredicate<any>[]):Promise<InterpreterResult> {
+  findChoice(context:Context, json:any, description:string, choices:ValuePredicate<any>[]):Promise<InterpreterResult> {
+    const cantFindChoice = () => Promise.reject(new Error(`could not find a valid choice for ${description}\ninput:\n${JSON.stringify(json, null, "  ")}`))
     return Arrays.findIndex(choices, choice => choice.predicate(json)).fold(
-      () => Promise.reject(new Error(`could find a choice for ${JSON.stringify(json)}`)),
-      (idx) => this.interpret(context, choices[idx].value(), json).then(
+      cantFindChoice,
+      (idx) => this.interpret(context, choices[idx].value(), json)
+        /*
+        .then(
         v => v,
         err => {
+          return Promise.reject(err)
+          / *
           const nchoices = choices.slice(idx+1)
-          return this.findChoice(context, json, nchoices)
+          if (nchoices.length === 0) return cantFindChoice()
+          else return this.findChoice(context, json, description, nchoices)
+
         }
-      )
+
+      )*/
     )
   }
 

@@ -1,6 +1,4 @@
-import {JsMap, Option, Arrays, fail, lazy} from "flib"
-import {Try, Success, Failure} from "./Try"
-import {ObjectsCache, newObjectsCache} from"./ObjectsCache"
+import {JsMap, Option, fail, lazy} from "flib"
 
 export enum SimpleValueKind {
   booleanKind, numberKind, textKind, getUrlKind
@@ -20,13 +18,13 @@ export interface RawValueNT<O> {
 }
 
 export abstract class Value<T> {
-  fold<T1>(
+  abstract fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined)) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1
 }
 
@@ -94,11 +92,11 @@ export class SimpleValue<I, T> extends Value<T> {
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined)) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
     return onRawValue(this.rawValue)
   }
@@ -114,7 +112,7 @@ export class OptionValue<T> extends Value<Option<T>> {
     onObject: (jsConstructor: JsConstructor<Option<T>>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
     return onOption(this.item())
   }
@@ -130,7 +128,7 @@ export class ArrayValue<T> extends Value<T[]> {
     onObject: (jsConstructor: JsConstructor<T[]>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
     return onSeq(this.item())
   }
@@ -138,16 +136,16 @@ export class ArrayValue<T> extends Value<T[]> {
 
 
 export class LinkValue<T> extends Value<T> {
-  constructor(private item: () => ObjectValue<T> | ChoiceValue<T>, private notFoundHandler:(resourceName:string) => T) {
+  constructor(private item: () => ObjectValue<T> | ChoiceValue<T>, private notFoundHandler:(resourceName:string) => (T|undefined)) {
     super()
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined)) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
     return onLink(this.item(), this.notFoundHandler)
   }
@@ -165,11 +163,11 @@ export class ObjectValue<T> extends Value<T> {
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined)) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
     if (this.props === undefined || this.props === null) {
       this.props = JsMap.map(this.properties, (k, v) => {
@@ -184,18 +182,18 @@ export class ObjectValue<T> extends Value<T> {
 }
 
 export class ChoiceValue<T> extends Value<T> {
-  constructor(private items: ValuePredicate<T>[]) {
+  constructor(private description:string, private items: ValuePredicate<T>[]) {
     super()
   }
   fold<T1>(
     onRawValue:RawValueNT<T1>,
-    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T) => T1,
+    onLink: (item: ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined)) => T1,
     onObject: (jsConstructor: JsConstructor<T>, properties: JsMap<[string, Value<any>]>, extraPropertiesStrategy: Option<ExtraPropertiesStrategy>) => T1,
     onOption: ValueNT<T1>,
     onSeq: ValueNT<T1>,
-    onChoice: (items: ValuePredicate<any>[]) => T1
+    onChoice: (description:string, items: ValuePredicate<any>[]) => T1
   ): T1 {
-    return onChoice(this.items)
+    return onChoice(this.description, this.items)
   }
 }
 
@@ -204,9 +202,13 @@ export class ValuePredicate<T> {
   }
 }
 
+export interface ValuePredicateFactory {
+  <T>(value: () => Value<T>):ValuePredicate<T>
+}
+
 export module NotFoundHandler {
 
-  export function defaultTo<T>(defaultValue:T):(resourceName:string) => T{
+  export function defaultTo<T>(defaultValue:(T|undefined)):(resourceName:string) => (T|undefined) {
     return lazy(() => defaultValue)
   }
 
@@ -217,6 +219,12 @@ export module NotFoundHandler {
 }
 
 export module Value {
+
+  export function match(pred:(a: any) => boolean):ValuePredicateFactory {
+    return <T>(value: () => Value<T>) => {
+      return new ValuePredicate<T>(pred, value)
+    };
+  }
 
   export const boolean = lazy(() => new SimpleValue<boolean, boolean>(RawValue.boolean))
 
@@ -234,7 +242,7 @@ export module Value {
     return () => new ArrayValue<T[]>(item)
   }
 
-  export function link<T>(item: () => ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => T = NotFoundHandler.raiseNotFoundError<T>()) {
+  export function link<T>(item: () => ObjectValue<T> | ChoiceValue<T>, notFoundHandler:(resourceName:string) => (T|undefined) = NotFoundHandler.raiseNotFoundError<T>()) {
     return () => new LinkValue<T>(item, notFoundHandler)
   }
 
@@ -242,16 +250,16 @@ export module Value {
     return () => new OptionValue<T>(() => new LinkValue<T>(item, NotFoundHandler.defaultTo<T>(undefined)))
   }
 
-  export function createChoice<T>(items: ValuePredicate<T>[]) {
-    return () => new ChoiceValue<T>(items)
+  export function createChoice<T>( description:string, items: ValuePredicate<T>[]) {
+    return () => new ChoiceValue<T>( description, items)
   }
 
-  export function choice(items: ValuePredicate<any>[]) {
-    return createChoice<any>(items)
+  export function choice( description:string, items: ValuePredicate<any>[]) {
+    return createChoice<any>( description, items)
   }
 
-  export function object<T>(jsConstructor: JsConstructor<T>, properties: JsMap<(() => Value<any>) | [string, () => Value<any>]>, extraPropertiesStrategy: ExtraPropertiesStrategy = null) {
-    const eps = Option.option(extraPropertiesStrategy)
+  export function object<T>(jsConstructor: JsConstructor<T>, properties: JsMap<(() => Value<any>) | [string, () => Value<any>]>, extraPropertiesStrategy: (ExtraPropertiesStrategy|null) = null) {
+    const eps = extraPropertiesStrategy !== null ? Option.some(extraPropertiesStrategy) : Option.None
     return () => new ObjectValue<T>(jsConstructor, properties, eps)
   }
 

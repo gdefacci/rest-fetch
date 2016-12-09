@@ -9,33 +9,17 @@
         "experimentalDecorators": true,
         "noImplicitAny": true,
         "noImplicitReturns": true,
-        "suppressImplicitAnyIndexErrors": true
+        "suppressImplicitAnyIndexErrors": true,
+        "strictNullChecks":true,
+        "noUnusedLocals": true,
+        "forceConsistentCasingInFileNames": true
+
+        //"diagnostics": true
     },
-    "files": [
-        "libs/es6-promise/es6-promise.d.ts",
-        "libs/reflect-metadata/reflect-metadata.d.ts",
-        "libs/whatwg-fetch/whatwg-fetch.d.ts",
-        "../node_modules/flib/index.d.ts",
-
-        "lib/Try.ts",
-        "lib/ObjectsCache.ts",
-        "lib/model.ts",
-        "lib/ObjectValueBuilder.ts",
-        "lib/annotations.ts",
-        "lib/HttpFetch.ts",
-        "lib/ResourceFetch.ts",
-
-        "lib/FetchResource.ts",
+    "include": [
+        "libs/**/*.d.ts",
+        "lib/**/*.ts",
         "index.ts",
-
-        // tests
-        "libs/jasmine/jasmine.d.ts",
-        "test/TestHelper.ts",
-        "test/JsonInterpreter_test.spec.ts",
-        "test/annotations_test.spec.ts",
-        "test/annotations_errors_test.spec.ts",
-
-        // samples
-        "samples/ReadmeSample.ts"
+        "test/**/*.ts"
     ]
 }

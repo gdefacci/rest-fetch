@@ -1,8 +1,9 @@
-import {Option, fail as ufail } from "flib"
+import {Option} from "flib"
 import {Value, ObjectValue, ValuePredicate, ExtraPropertiesStrategy} from "../lib/model"
-import {promisesMap, TestFetcher} from "./TestHelper"
+import TestFetcher from "../lib/TestFetcher"
 
 const fetcher = new TestFetcher(ExtraPropertiesStrategy.fail)
+const promisesMap = TestFetcher.promisesMap
 
 describe("object mappings", function () {
 
@@ -326,9 +327,6 @@ describe("object mappings", function () {
 
   describe("choice", () => {
 
-    interface Pet {
-    }
-
     class Dog {
       bau:string
     }
@@ -348,7 +346,7 @@ describe("object mappings", function () {
 
     const catMapping = Value.object(Cat, ({ "meow" : Value.string }) )
     const dogMapping = Value.object(Dog, ({ "bau" : Value.string }) )
-    const petMapping = Value.choice([new ValuePredicate( a => a.meow !== undefined, catMapping ), new ValuePredicate( a => a.bau !== undefined, dogMapping )] )
+    const petMapping = Value.choice("Pet",[new ValuePredicate( a => a.meow !== undefined, catMapping ), new ValuePredicate( a => a.bau !== undefined, dogMapping )] )
 
     it('Pet1', (done) => {
       fetcher.fetchResource("/pet/1", petMapping, cache2)( v => {
@@ -399,7 +397,7 @@ describe("object mappings", function () {
 
     const catMapping = Value.object(Cat, ({ "meow" : Value.string }) )
     const dogMapping = Value.object(Dog, ({ "bau" : Value.string }) )
-    const petMapping = Value.choice( [new ValuePredicate( a => a.meow !== undefined, catMapping ), new ValuePredicate( a => a.bau !== undefined, dogMapping )] )
+    const petMapping = Value.choice("Pet", [new ValuePredicate( a => a.meow !== undefined, catMapping ), new ValuePredicate( a => a.bau !== undefined, dogMapping )])
     const petsMapping = Value.object(Pets, ({ "pets" : Value.array( Value.link( petMapping ) ) }) )
 
     it('Pets', (done) => {
@@ -446,7 +444,10 @@ describe("object mappings", function () {
 
     const catMapping = Value.object(Cat, ({ "meow" : Value.string, "self" : Value.getUrl }))
     const dogMapping = Value.object(Dog, ({ "bau" : Value.string, "self" : Value.getUrl }) )
-    const petMapping = Value.choice( [new ValuePredicate( a => a.meow !== undefined, catMapping ), new ValuePredicate( a => a.bau !== undefined, dogMapping )] )
+    const petMapping = Value.choice("Pet", [
+      Value.match( a => a.meow !== undefined)(catMapping),
+      Value.match( a => a.bau !== undefined)(dogMapping)
+    ])
     const petsMapping = Value.object(Pets, ({ "pets" : Value.array( Value.link( petMapping ) ), "self" : Value.option( Value.getUrl ) }) )
 
     it('Cat', (done) => {

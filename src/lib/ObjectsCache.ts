@@ -19,17 +19,17 @@ class EntriesMap<K,V> implements ObjectsCache<K,V> {
   constructor(private keyPredicate:(a:K, b:K) => boolean) {
   }
   get(ks:string, k:K):Option<V> {
-    return Option.option(this.cache[ks]).flatMap( entries => {
+    return new Option<Entry<K,V>[]>(this.cache[ks]).flatMap( entries => {
       return Arrays.find<Entry<K,V>>(entries, e => this.keyPredicate(e.key, k) )
     } ).map( e => e.value )
   }
   put(ks:string, k:K, v:V):void {
-    Option.option<Entry<K,V>[]>(this.cache[ks]).fold(
+    new Option<Entry<K,V>[]>(this.cache[ks]).fold(
       () => { this.cache[ks] = [{key:k, value:v}] },
-      (entries) => {
+      entries => {
          Arrays.find<Entry<K,V>>(entries, e => this.keyPredicate(e.key, k)).fold<void>(
           () => entries.push({key:k, value:v}),
-          (oldValue) => {
+          (oldValue:Entry<K,V>) => {
             oldValue.value = v
             //throw new Error(`replacing previous entry ${ks} key ${k}`)
           }

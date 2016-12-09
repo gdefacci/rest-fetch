@@ -1,12 +1,13 @@
-import {JsMap, Option, fail as ufail } from "flib"
+import {Option} from "flib"
 import {ExtraPropertiesStrategy, Value} from "../lib/model"
-import {mapping, lazyMapping} from "../lib/Mappings"
-import {promisesMap, TestFetcher} from "./TestHelper"
+import {mapping, Lazy} from "../lib/Mappings"
+import TestFetcher from "../lib/TestFetcher"
 
 import {link, convert, fetchProperties} from "../lib/annotations"
 
 import "reflect-metadata"
 
+const promisesMap = TestFetcher.promisesMap
 const fetcher = new TestFetcher(ExtraPropertiesStrategy.fail)
 const nop:() =>void = () => null
 
@@ -206,5 +207,27 @@ describe("cant infer type", () => {
     });
 
   })
+
+  describe("missing ref", () => {
+    class Person1 {
+      @convert()
+      name: string
+      @convert(Lazy.arrayOfLinks(() => Person1))
+      friend: Person1[]
+    }
+
+    const cache3 = promisesMap({
+      "/person1/1": {
+        name: "pluto",
+        friend: ["/person1/4"]
+      }
+    })
+
+    it('missing ref', (done) => {
+      fetcher.fetchFails("/person1/1", mapping(Person1), cache3)( v => {
+        done()
+      })
+    });
+  });
 
 })

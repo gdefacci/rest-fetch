@@ -1,4 +1,4 @@
-A annotations based typescript library, to fetch graph of objects, exposed as rest/HATEOAS resources.
+A annotations based typescript library, to fetch graph of objects, exposed as rest/HATEOAS resources. 
 
 tutorial
 ========
@@ -42,79 +42,59 @@ GET /persons/pippo/address
 
 and we want to map those resources to the typescript model:
 
-```
-interface City {
-  name: string
-}
+    interface City {
+      name:string
+    }
 
-interface Address {
-  street: string
-  city: City
-}
+    interface Address {
+      street:string
+      city:City
+    }
 
-interface Person {
-  name: string
-  friends: Person[]
-  address: Address
-}
-```
+    interface Person {
+      name:string
+      friends:Person[]
+      address:Address
+    }
 
-We can achieve the result defining few mapping classes:
+We can achieve the result defining few classes:
 
-```
-import {link,lazyMapping, Value, convert} from "rest-fetch"
+    import {link, fetch} from "rest-fetch"
 
-class CityImpl implements City {
-  name: string
-}
+    class CityImpl implements City {
+      name:string
+    }
 
-class AddressImpl implements Address {
-  street: string
+    class AddressImpl implements Address {
+      street:string
+      
+      @link()
+      city:City
+    }
 
-  @link()
-  city: City
-}
-
-class PersonImpl implements Person {
-  name: string
-
-  @convert(Value.array(Value.link(lazyMapping(() => PersonImpl))))
-  friends: Person[]
-
-  @link()
-  address: Address
-}
-```
+    class PersonImpl implements Person {
+      name:string
+      
+      @link({ arrayOf:Person })
+      friends:Person[]
+      
+      @link()
+      address:Address
+    }
 
 And then:
 
 ```
-import {fetchResource,  mapping} from "rest-fetch"
-
-const result:Promise<Person> = fetchResource(mapping(PersonImpl)).from("/persons/pippo")
+const result:Promise<Person> = fetch(PersonImpl).from("/persons/pippo")  
 ```
 
 See [tests](src/test) for more examples
 
 It also works for cyclic/recursive structures.
 
-Build
-=====
-```
-npm run-script clean
-```
-remove artifacts produced by the build
-```
-npm install & npm test
-```
-launch the tests
-```
-npm runScript mkTest
-```
-create jasmine test browser bundle, that can be run on the browser
-
 Issues/Limitations
 ==================
 
-- classes instantiation is done invoking the constructor with no arguments
-- @link() and @convert() annotations can be specified only for properties of classes
+- classes instantiation is done invoking the constructor with no arguments 
+- @link() and @convert() annotations can be specified only for properties of classes 
+- class declaration order matters, actually you can only reference a previously defined class in link, or convert annotations

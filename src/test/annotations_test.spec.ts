@@ -1,12 +1,13 @@
-import {Option, fail as ufail } from "flib"
+import {Option} from "flib"
 import {ExtraPropertiesStrategy, Value} from "../lib/model"
-import {mapping, lazyMapping} from "../lib/Mappings"
-import {promisesMap, TestFetcher} from "./TestHelper"
+import {mapping, Lazy} from "../lib/Mappings"
+import TestFetcher from "../lib/TestFetcher"
 
 import {link, convert} from "../lib/annotations"
 
 import "reflect-metadata"
 
+const promisesMap = TestFetcher.promisesMap
 const fetcher = new TestFetcher(ExtraPropertiesStrategy.fail)
 
 describe("object annotations mappings", function () {
@@ -123,7 +124,7 @@ describe("object annotations mappings", function () {
       @convert()
       name:string
       /** Person is not defined when the annotation is evaluated */
-      @convert(lazyMapping(() => Person))
+      @convert(Lazy.mapping(() => Person))
       person:Person
     }
 
@@ -166,7 +167,7 @@ describe("object annotations mappings", function () {
       @convert()
       name:string
       /** Person is not defined when the annotation is evaluated */
-      @link(lazyMapping(() => Person))
+      @link(Lazy.mapping(() => Person))
       person:Person
     }
 
@@ -385,5 +386,63 @@ describe("object annotations mappings", function () {
     });
 
   });
+
+  describe("link of choice", () => {
+
+    class Dog {
+      @convert()
+      bau:string
+      self:string
+    }
+
+    class Cat {
+      meow:string
+      self:string
+    }
+
+    type Pet = Cat | Dog
+
+    class Bed {
+      @link(Value.choice("Pet", [
+        Value.match( a => a.meow !== undefined)(mapping(Cat)),
+        Value.match( a => a.bau !== undefined)(mapping(Dog))
+      ]))
+      pet:Pet
+    }
+
+    const cache1 = promisesMap({
+      "/pet/1": {
+        meow: "meeehe"
+      },
+      "/pet/2":{
+        bau: "buuhu"
+      },
+      "/bed/1":{
+        pet:"/pet/1"
+      },
+      "/bed/2":{
+        pet:"/pet/2"
+      }
+    })
+
+    it('Bed 1', (done) => {
+      fetcher.fetchResource("/bed/1", mapping(Bed), cache1)( v => {
+        expect(v instanceof Bed).toBe(true)
+        const pt1 = v.pet
+        expect(pt1 instanceof Cat).toBe(true)
+        done()
+      })
+    });
+
+    it('Bed 2', (done) => {
+      fetcher.fetchResource("/bed/2", mapping(Bed), cache1)( v => {
+        expect(v instanceof Bed).toBe(true)
+        const pt1 = v.pet
+        expect(pt1 instanceof Dog).toBe(true)
+        done()
+      })
+    });
+
+  })
 
 })
